@@ -1,0 +1,483 @@
+index.html<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>ひとまとめ便</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F3EC;
+    --paper-deep:#EFE8D9;
+    --line:#E1D8C2;
+    --ink:#2B2A28;
+    --ink-soft:#7A7163;
+    --accent:#2D4A6B;
+    --accent-soft:#DCE6EE;
+    --seal:#B5482F;
+    --seal-deep:#8E3522;
+    --success:#3F7A4D;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Noto Sans JP", sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:96px;
+  }
+  .bg-texture{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.018) 28px),
+      repeating-linear-gradient(90deg, transparent, transparent 27px, rgba(0,0,0,0.012) 28px);
+  }
+  .wrap{ position:relative; z-index:1; max-width:640px; margin:0 auto; padding:0 16px; }
+
+  header{
+    padding:28px 4px 18px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:18px;
+  }
+  .eyebrow{
+    font-family:"JetBrains Mono", monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    color:var(--accent);
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;border-radius:50%;
+    background:var(--seal);
+    display:inline-block;
+  }
+  h1{
+    font-family:"Shippori Mincho", serif;
+    font-weight:700;
+    font-size:30px;
+    margin:6px 0 4px;
+    letter-spacing:.02em;
+  }
+  header p{
+    margin:0;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    line-height:1.7;
+  }
+
+  .toolbar{
+    display:flex; gap:8px; flex-wrap:wrap;
+    margin-bottom:18px;
+  }
+  .btn{
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:13.5px; font-weight:500;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    padding:10px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+    transition:transform .12s ease, background .15s ease, border-color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:active{ transform:scale(.96); }
+  .btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.ghost{ background:transparent; }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn svg{ width:15px; height:15px; flex:none; }
+
+  .count-chip{
+    font-family:"JetBrains Mono", monospace;
+    font-size:12px;
+    color:var(--accent);
+    background:var(--accent-soft);
+    border-radius:999px;
+    padding:6px 12px;
+    display:inline-flex; align-items:center;
+    margin-left:auto;
+  }
+
+  #fileInput{ display:none; }
+
+  .empty{
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius);
+    padding:40px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13.5px;
+    line-height:1.8;
+  }
+  .empty strong{ color:var(--ink); display:block; font-size:15px; margin-bottom:6px; font-family:"Shippori Mincho",serif; font-weight:700;}
+
+  .block{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:12px;
+    overflow:hidden;
+    box-shadow:0 1px 0 rgba(0,0,0,0.02);
+  }
+  .block-head{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 10px 10px 12px;
+    border-bottom:1px solid var(--line);
+    background:var(--paper-deep);
+  }
+  .idx{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;
+    color:var(--accent);
+    background:var(--accent-soft);
+    border-radius:6px;
+    width:22px; height:22px;
+    display:flex; align-items:center; justify-content:center;
+    flex:none;
+  }
+  .title-input{
+    flex:1; min-width:0;
+    border:none; background:transparent;
+    font-family:"Noto Sans JP",sans-serif;
+    font-weight:500; font-size:14.5px;
+    color:var(--ink);
+    outline:none;
+    padding:4px 2px;
+  }
+  .title-input::placeholder{ color:var(--ink-soft); font-weight:400; }
+  .icon-btn{
+    border:none; background:transparent; cursor:pointer;
+    color:var(--ink-soft);
+    width:30px; height:30px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    flex:none;
+    transition:background .15s ease, color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .icon-btn:hover{ background:#fff; color:var(--ink); }
+  .icon-btn:disabled{ opacity:.3; cursor:not-allowed; }
+  .icon-btn svg{ width:16px; height:16px; }
+  .icon-btn.danger:hover{ color:var(--seal); }
+
+  textarea.content{
+    width:100%; border:none; outline:none; resize:none;
+    font-family:"JetBrains Mono", monospace;
+    font-size:13px; line-height:1.65;
+    color:var(--ink);
+    padding:14px 16px 12px;
+    background:transparent;
+    min-height:64px;
+  }
+  textarea.content::placeholder{ color:#B9AF9C; font-family:"Noto Sans JP",sans-serif; }
+
+  .block-foot{
+    display:flex; justify-content:flex-end; gap:4px;
+    padding:4px 8px 8px;
+  }
+  .mini{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px; color:var(--ink-soft);
+    background:transparent; border:none; cursor:pointer;
+    padding:5px 9px; border-radius:6px;
+    display:flex; align-items:center; gap:5px;
+  }
+  .mini:hover{ background:var(--accent-soft); color:var(--accent); }
+  .mini svg{ width:12px; height:12px; }
+
+  footer{
+    text-align:center;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:24px;
+    line-height:1.8;
+    font-family:"JetBrains Mono", monospace;
+  }
+
+  /* Floating seal button — signature element */
+  .seal-wrap{
+    position:fixed;
+    bottom:22px; right:22px;
+    z-index:20;
+  }
+  .seal{
+    width:64px; height:64px;
+    border-radius:50%;
+    background:radial-gradient(circle at 32% 28%, #c75942, var(--seal) 55%, var(--seal-deep) 100%);
+    color:#fff;
+    border:none;
+    box-shadow:0 6px 16px rgba(181,72,47,0.4), 0 2px 4px rgba(0,0,0,0.15);
+    cursor:pointer;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    font-family:"Shippori Mincho", serif;
+    font-size:20px;
+    font-weight:700;
+    letter-spacing:.05em;
+    transition:transform .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .seal:active{ transform:scale(.88) rotate(-6deg); }
+  .seal:disabled{ opacity:.35; box-shadow:none; cursor:not-allowed; }
+  .seal-label{
+    font-size:7px;
+    font-family:"Noto Sans JP",sans-serif;
+    font-weight:500;
+    letter-spacing:.05em;
+    margin-top:1px;
+  }
+
+  /* Toast */
+  .toast{
+    position:fixed;
+    bottom:96px; left:50%;
+    transform:translateX(-50%) translateY(10px);
+    background:var(--ink);
+    color:#fff;
+    font-size:13px;
+    padding:10px 18px;
+    border-radius:999px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:30;
+    white-space:nowrap;
+    display:flex; align-items:center; gap:6px;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast svg{ width:14px; height:14px; color:#7CC68A; flex:none; }
+
+  @media (prefers-reduced-motion: reduce){
+    .btn, .seal, .icon-btn, .toast{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-texture"></div>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">PLAIN TEXT BUNDLER</div>
+    <h1>ひとまとめ便</h1>
+    <p>iPhoneの「ファイル」アプリにある文章をまとめて読み込み、整えて、ワンタップで送る。<br>コピーはすべてプレーンテキスト ── 貼り先で書式が崩れることはありません。</p>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn primary" id="addFromFiles">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      ファイルから読み込む
+    </button>
+    <button class="btn ghost" id="addBlank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      空のメモを追加
+    </button>
+    <span class="count-chip" id="countChip">0件</span>
+  </div>
+  <input type="file" id="fileInput" multiple accept=".txt,.md,.csv,.log,.json,text/plain">
+
+  <div id="list"></div>
+
+  <footer>このページを閉じる・更新すると内容は消えます（どこにも保存されません）</footer>
+</div>
+
+<div class="seal-wrap">
+  <button class="seal" id="sealBtn" disabled title="まとめて送信 / コピー">
+    送<span class="seal-label">送信</span>
+  </button>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+  <span id="toastText">コピーしました</span>
+</div>
+
+<script>
+let blocks = [];
+let idSeed = 1;
+
+const listEl = document.getElementById('list');
+const countChip = document.getElementById('countChip');
+const sealBtn = document.getElementById('sealBtn');
+const toast = document.getElementById('toast');
+const toastText = document.getElementById('toastText');
+const fileInput = document.getElementById('fileInput');
+
+function showToast(msg){
+  toastText.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> toast.classList.remove('show'), 1800);
+}
+
+function stripExt(name){
+  return name.replace(/\.[^./\\]+$/, '');
+}
+
+function addBlock(title, content, focus){
+  blocks.push({ id: idSeed++, title: title || '', content: content || '' });
+  render();
+  if(focus){
+    requestAnimationFrame(()=>{
+      const last = listEl.querySelector('.block:last-child textarea');
+      if(last) last.focus();
+    });
+  }
+}
+
+function removeBlock(id){
+  blocks = blocks.filter(b => b.id !== id);
+  render();
+}
+
+function moveBlock(id, dir){
+  const i = blocks.findIndex(b => b.id === id);
+  const j = i + dir;
+  if(j < 0 || j >= blocks.length) return;
+  [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
+  render();
+}
+
+function combinedText(){
+  return blocks.map(b => {
+    const body = b.content.trim();
+    return b.title.trim() ? `▼ ${b.title.trim()}\n${body}` : body;
+  }).join('\n\n──────────\n\n');
+}
+
+async function copyText(text, msg){
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast(msg || 'コピーしました');
+  }catch(e){
+    // fallback
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); showToast(msg || 'コピーしました'); }
+    catch(e2){ showToast('コピーに失敗しました'); }
+    document.body.removeChild(ta);
+  }
+}
+
+async function shareAll(){
+  const text = combinedText();
+  if(!text.trim()) return;
+  if(navigator.share){
+    try{
+      await navigator.share({ text });
+      return;
+    }catch(e){
+      if(e && e.name === 'AbortError') return; // user cancelled
+      // fall through to copy
+    }
+  }
+  copyText(text, 'コピーしました（共有はこの環境では使えません）');
+}
+
+function render(){
+  countChip.textContent = blocks.length + '件';
+  sealBtn.disabled = blocks.length === 0;
+
+  if(blocks.length === 0){
+    listEl.innerHTML = `
+      <div class="empty">
+        <strong>まだ何もありません</strong>
+        「ファイルから読み込む」でiPhoneの文章ファイルを複数選ぶか、<br>
+        「空のメモを追加」で直接貼り付けてください。
+      </div>`;
+    return;
+  }
+
+  listEl.innerHTML = '';
+  blocks.forEach((b, i) => {
+    const el = document.createElement('div');
+    el.className = 'block';
+    el.innerHTML = `
+      <div class="block-head">
+        <span class="idx">${String(i+1).padStart(2,'0')}</span>
+        <input class="title-input" type="text" placeholder="タイトル（任意）" value="${escapeAttr(b.title)}">
+        <button class="icon-btn" data-act="up" ${i===0 ? 'disabled' : ''} title="上に移動">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15 12 9l-6 6"/></svg>
+        </button>
+        <button class="icon-btn" data-act="down" ${i===blocks.length-1 ? 'disabled' : ''} title="下に移動">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        </button>
+        <button class="icon-btn danger" data-act="del" title="削除">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+        </button>
+      </div>
+      <textarea class="content" placeholder="ここに文章を貼り付け">${escapeHtml(b.content)}</textarea>
+      <div class="block-foot">
+        <button class="mini" data-act="copyone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          この一件をコピー
+        </button>
+      </div>
+    `;
+    listEl.appendChild(el);
+
+    const titleInput = el.querySelector('.title-input');
+    const textarea = el.querySelector('.content');
+    titleInput.addEventListener('input', () => { b.title = titleInput.value; });
+    textarea.addEventListener('input', () => {
+      b.content = textarea.value;
+      autoGrow(textarea);
+    });
+    autoGrow(textarea);
+
+    el.querySelector('[data-act="up"]').addEventListener('click', () => moveBlock(b.id, -1));
+    el.querySelector('[data-act="down"]').addEventListener('click', () => moveBlock(b.id, 1));
+    el.querySelector('[data-act="del"]').addEventListener('click', () => removeBlock(b.id));
+    el.querySelector('[data-act="copyone"]').addEventListener('click', () => {
+      const text = b.title.trim() ? `▼ ${b.title.trim()}\n${b.content.trim()}` : b.content.trim();
+      copyText(text);
+    });
+  });
+}
+
+function autoGrow(ta){
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 480) + 'px';
+}
+
+function escapeHtml(s){
+  return (s || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+function escapeAttr(s){
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+document.getElementById('addBlank').addEventListener('click', () => addBlock('', '', true));
+document.getElementById('addFromFiles').addEventListener('click', () => fileInput.click());
+
+fileInput.addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  if(files.length === 0) return;
+  let loaded = 0;
+  for(const file of files){
+    try{
+      const text = await file.text();
+      addBlock(stripExt(file.name), text, false);
+      loaded++;
+    }catch(err){ /* skip unreadable file */ }
+  }
+  fileInput.value = '';
+  if(loaded > 0) showToast(`${loaded}件読み込みました`);
+});
+
+sealBtn.addEventListener('click', shareAll);
+
+render();
+</script>
+</body>
+</html>
