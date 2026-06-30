@@ -2,8 +2,19 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>ひとまとめ便</title>
+
+<!-- ホーム画面に追加したときアプリらしく動かすための設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ひとまとめ便">
+<meta name="theme-color" content="#F7F3EC">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -28,7 +39,7 @@
     font-family:"Noto Sans JP", sans-serif;
     -webkit-font-smoothing:antialiased;
     min-height:100vh;
-    padding-bottom:96px;
+    padding-bottom:calc(96px + env(safe-area-inset-bottom));
   }
   .bg-texture{
     position:fixed; inset:0; pointer-events:none; z-index:0;
@@ -127,6 +138,37 @@
   }
   .filter-chip.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
   .filter-chip.clear{ color:var(--seal); border-color:transparent; background:transparent; }
+
+  .icon-btn.lock-active{ color:var(--accent); background:var(--accent-soft); }
+  .block.is-locked{ border-color:var(--accent); }
+  .block.is-locked .block-head{ background:var(--accent-soft); }
+
+  .search-bar{
+    display:flex; align-items:center; gap:8px;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:999px;
+    padding:9px 14px;
+    margin-bottom:14px;
+  }
+  .search-bar svg{ width:15px; height:15px; color:var(--ink-soft); flex:none; }
+  .search-bar input{
+    flex:1; min-width:0; border:none; outline:none; background:transparent;
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:13.5px; color:var(--ink);
+  }
+  .search-bar input::placeholder{ color:#B9AF9C; }
+  .search-clear{
+    border:none; background:transparent; cursor:pointer;
+    color:var(--ink-soft); font-size:15px; line-height:1; padding:2px 4px;
+  }
+  .search-clear:hover{ color:var(--seal); }
+
+  .title-input[readonly], textarea.content[readonly]{
+    color:var(--ink);
+    cursor:default;
+  }
+  .title-input[readonly]::placeholder{ opacity:0; }
 
   .empty{
     border:1.5px dashed var(--line);
@@ -254,7 +296,7 @@
 
   .seal-wrap{
     position:fixed;
-    bottom:22px; right:22px;
+    bottom:calc(22px + env(safe-area-inset-bottom)); right:calc(22px + env(safe-area-inset-right));
     z-index:20;
   }
   .seal{
@@ -346,15 +388,21 @@
   </div>
   <input type="file" id="fileInput" multiple accept=".txt,.md,.csv,.log,.json,.pdf,text/plain,application/pdf">
 
+  <div class="search-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" id="searchInput" placeholder="タイトル・タグ・本文を検索">
+    <button class="search-clear" id="searchClear" hidden>×</button>
+  </div>
+
   <div class="filter-bar" id="filterBar"></div>
 
   <div id="list"><div class="loading">読み込み中…</div></div>
 
-  <footer>内容・タグ・並び順は自動的に保存されます<br>同じファイルを再度読み込んでも二重には追加されません<br>スキャンのみのPDF（画像PDF）は文字を取得できない場合があります</footer>
+  <footer>内容・タグ・並び順・各メモのロック状態は自動的に保存されます<br>同じファイルを再度読み込んでも二重には追加されません<br>スキャンのみのPDF（画像PDF）は文字を取得できない場合があります</footer>
 </div>
 
 <div class="seal-wrap">
-  <button class="seal" id="sealBtn" disabled title="まとめて送信 / コピー">
+  <button class="seal" id="sealBtn" disabled title="まとめて送信 / ファイルに保存 / コピー">
     送<span class="seal-label">送信</span>
   </button>
 </div>
@@ -365,6 +413,7 @@
 </div>
 
 <datalist id="tagSuggestions"></datalist>
+
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script>
@@ -396,6 +445,7 @@ let blocks = [];
 let idSeed = 1;
 let activeFilters = new Set();
 let clearArmed = false;
+let searchQuery = '';
 
 const listEl = document.getElementById('list');
 const filterBarEl = document.getElementById('filterBar');
@@ -406,6 +456,8 @@ const toastText = document.getElementById('toastText');
 const fileInput = document.getElementById('fileInput');
 const clearAllBtn = document.getElementById('clearAll');
 const tagSuggestions = document.getElementById('tagSuggestions');
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
 
 const TAG_PALETTE = [
   {bg:'#DCE6EE', fg:'#2D4A6B'},
@@ -442,30 +494,95 @@ function stripExt(name){
   return name.replace(/\.[^./\\]+$/, '');
 }
 
-/* ---------- storage ---------- */
+/* ---------- storage ----------
+   Claude.aiのプレビュー内では window.storage（クラウド保存）を使い、
+   GitHub Pagesなど自分でホスティングした環境（window.storageが存在しない）では
+   自動的にブラウザのlocalStorage（この端末のSafari内だけの保存）に切り替わる。
+   window.storageはページ読み込み直後だと少し遅れて使えるようになることがあるため、
+   起動時はiframe内（Claudeのプレビュー）かどうかを見て、必要なら少し待ってから判定する。
+*/
+let hasCloudStorage = false;
+
+function cloudStorageReady(){
+  return (typeof window.storage !== 'undefined') && window.storage && typeof window.storage.get === 'function';
+}
+
+async function detectCloudStorage(){
+  if(cloudStorageReady()){
+    hasCloudStorage = true;
+    return;
+  }
+  const isEmbedded = (() => {
+    try{ return window.self !== window.top; }catch(e){ return true; }
+  })();
+  if(!isEmbedded){
+    hasCloudStorage = false;
+    return;
+  }
+  const start = Date.now();
+  while(Date.now() - start < 800){
+    if(cloudStorageReady()){
+      hasCloudStorage = true;
+      return;
+    }
+    await new Promise(r => setTimeout(r, 50));
+  }
+  hasCloudStorage = false;
+}
+
+async function storageGet(key){
+  if(hasCloudStorage){
+    try{
+      const r = await window.storage.get(key, false);
+      return (r && typeof r.value === 'string') ? r.value : null;
+    }catch(e){
+      return null;
+    }
+  }
+  try{
+    return localStorage.getItem(key);
+  }catch(e){
+    return null;
+  }
+}
+async function storageSet(key, value){
+  if(hasCloudStorage){
+    try{
+      await window.storage.set(key, value, false);
+    }catch(e){
+      console.error('save failed', e);
+    }
+    return;
+  }
+  try{
+    localStorage.setItem(key, value);
+  }catch(e){
+    console.error('save failed', e);
+  }
+}
+
 let saveTimer = null;
 function scheduleSave(){
   clearTimeout(saveTimer);
   saveTimer = setTimeout(saveState, 450);
 }
 async function saveState(){
-  try{
-    await window.storage.set(STORAGE_KEY, JSON.stringify(blocks), false);
-  }catch(e){
-    console.error('save failed', e);
-  }
+  await storageSet(STORAGE_KEY, JSON.stringify(blocks));
 }
 async function loadState(){
-  try{
-    const res = await window.storage.get(STORAGE_KEY, false);
-    if(res && typeof res.value === 'string'){
-      const parsed = JSON.parse(res.value);
+  const raw = await storageGet(STORAGE_KEY);
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
       if(Array.isArray(parsed)) blocks = parsed;
+    }catch(e){
+      blocks = [];
     }
-  }catch(e){
-    blocks = [];
   }
-  blocks.forEach(b => { if(!Array.isArray(b.tags)) b.tags = []; });
+  blocks.forEach(b => {
+    if(!Array.isArray(b.tags)) b.tags = [];
+    if(typeof b.locked !== 'boolean') b.locked = false;
+  });
   idSeed = blocks.reduce((m,b)=>Math.max(m, b.id||0), 0) + 1;
   render();
 }
@@ -478,7 +595,8 @@ function addBlock(opts, focus){
     title: opts.title || '',
     content: opts.content || '',
     tags: opts.tags || [],
-    fingerprint: opts.fingerprint || null
+    fingerprint: opts.fingerprint || null,
+    locked: false
   });
   render();
   scheduleSave();
@@ -505,6 +623,15 @@ function moveBlock(id, dir){
   scheduleSave();
 }
 
+function toggleBlockLock(id){
+  const b = blocks.find(x => x.id === id);
+  if(!b) return;
+  b.locked = !b.locked;
+  render();
+  scheduleSave();
+  showToast(b.locked ? 'このメモをロックしました' : 'ロックを解除しました');
+}
+
 function addTag(b, raw){
   raw.split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>{
     if(!b.tags.includes(t)) b.tags.push(t);
@@ -524,9 +651,25 @@ function allTags(){
   return Array.from(set).sort();
 }
 
+function isFiltering(){
+  return activeFilters.size > 0 || searchQuery.trim().length > 0;
+}
+
 function visibleBlocks(){
-  if(activeFilters.size === 0) return blocks;
-  return blocks.filter(b => b.tags.some(t => activeFilters.has(t)));
+  let list = blocks;
+  if(activeFilters.size > 0){
+    list = list.filter(b => b.tags.some(t => activeFilters.has(t)));
+  }
+  const q = searchQuery.trim().toLowerCase();
+  if(q){
+    list = list.filter(b => {
+      if(b.title && b.title.toLowerCase().includes(q)) return true;
+      if(b.tags.some(t => t.toLowerCase().includes(q))) return true;
+      if(b.content && b.content.toLowerCase().includes(q)) return true;
+      return false;
+    });
+  }
+  return list;
 }
 
 function combinedText(list){
@@ -555,10 +698,34 @@ async function copyText(text, msg){
   }
 }
 
+function buildFileName(){
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `ひとまとめ_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.txt`;
+}
+
 async function shareAll(){
   const list = visibleBlocks();
   const text = combinedText(list);
   if(!text.trim()) return;
+
+  const filename = buildFileName();
+  let file = null;
+  try{
+    file = new File([text], filename, { type: 'text/plain' });
+  }catch(e){
+    file = null;
+  }
+
+  if(file && navigator.canShare && navigator.canShare({ files: [file] })){
+    try{
+      await navigator.share({ files: [file], title: filename });
+      return;
+    }catch(e){
+      if(e && e.name === 'AbortError') return;
+    }
+  }
+
   if(navigator.share){
     try{
       await navigator.share({ text });
@@ -567,6 +734,7 @@ async function shareAll(){
       if(e && e.name === 'AbortError') return;
     }
   }
+
   copyText(text, 'コピーしました（共有はこの環境では使えません）');
 }
 
@@ -577,14 +745,14 @@ function render(){
   renderTagSuggestions();
 
   const vis = visibleBlocks();
-  countChip.textContent = activeFilters.size === 0
-    ? `${blocks.length}件`
-    : `${vis.length} / ${blocks.length}件`;
+  countChip.textContent = isFiltering()
+    ? `${vis.length} / ${blocks.length}件`
+    : `${blocks.length}件`;
   sealBtn.disabled = vis.length === 0;
 
   const existingBadge = sealBtn.querySelector('.seal-badge');
   if(existingBadge) existingBadge.remove();
-  if(activeFilters.size > 0 && vis.length > 0){
+  if(isFiltering() && vis.length > 0){
     const badge = document.createElement('span');
     badge.className = 'seal-badge';
     badge.textContent = vis.length;
@@ -637,39 +805,52 @@ function renderList(){
   if(list.length === 0){
     listEl.innerHTML = `
       <div class="empty">
-        <strong>このタグの項目はありません</strong>
-        フィルターを変えるか「すべて表示」を押してください。
+        <strong>見つかりませんでした</strong>
+        検索条件やタグの絞り込みを変えてみてください。<br>
+        <button class="mini" id="resetSearchFilter" style="margin-top:8px;">検索・絞り込みを解除</button>
       </div>`;
+    const resetBtn = document.getElementById('resetSearchFilter');
+    if(resetBtn) resetBtn.addEventListener('click', () => {
+      activeFilters.clear();
+      searchQuery = '';
+      searchInput.value = '';
+      searchClear.hidden = true;
+      render();
+    });
     return;
   }
 
   listEl.innerHTML = '';
   list.forEach((b, i) => {
     const el = document.createElement('div');
-    el.className = 'block';
+    el.className = 'block' + (b.locked ? ' is-locked' : '');
     const tagsHtml = b.tags.map(t => {
       const c = tagColor(t);
-      return `<span class="tag-pill" style="background:${c.bg};color:${c.fg}">${escapeHtml(t)}<button data-tag="${escapeAttr(t)}" class="tag-remove">×</button></span>`;
+      const removeBtn = b.locked ? '' : `<button data-tag="${escapeAttr(t)}" class="tag-remove">×</button>`;
+      return `<span class="tag-pill" style="background:${c.bg};color:${c.fg}">${escapeHtml(t)}${removeBtn}</span>`;
     }).join('');
 
     el.innerHTML = `
       <div class="block-head">
         <span class="idx">${String(i+1).padStart(2,'0')}</span>
-        <input class="title-input" type="text" placeholder="タイトル（任意）" value="${escapeAttr(b.title)}">
-        <button class="icon-btn" data-act="up" title="上に移動">
+        <input class="title-input" type="text" placeholder="タイトル（任意）" value="${escapeAttr(b.title)}" ${b.locked ? 'readonly' : ''}>
+        <button class="icon-btn${b.locked ? ' lock-active' : ''}" data-act="lock" title="${b.locked ? 'ロック解除' : 'このメモをロック'}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </button>
+        <button class="icon-btn" data-act="up" title="上に移動" ${b.locked ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15 12 9l-6 6"/></svg>
         </button>
-        <button class="icon-btn" data-act="down" title="下に移動">
+        <button class="icon-btn" data-act="down" title="下に移動" ${b.locked ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
         </button>
-        <button class="icon-btn danger" data-act="del" title="削除">
+        <button class="icon-btn danger" data-act="del" title="削除" ${b.locked ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
         </button>
       </div>
-      <textarea class="content" placeholder="ここに文章を貼り付け">${escapeHtml(b.content)}</textarea>
+      <textarea class="content" placeholder="ここに文章を貼り付け" ${b.locked ? 'readonly' : ''}>${escapeHtml(b.content)}</textarea>
       <div class="tag-row">
         ${tagsHtml}
-        <input class="tag-input" type="text" placeholder="+ タグ" list="tagSuggestions">
+        ${b.locked ? '' : '<input class="tag-input" type="text" placeholder="+ タグ" list="tagSuggestions">'}
       </div>
       <div class="block-foot">
         <button class="mini" data-act="copyone">
@@ -681,8 +862,9 @@ function renderList(){
     listEl.appendChild(el);
 
     const realIndex = blocks.findIndex(x => x.id === b.id);
-    el.querySelector('[data-act="up"]').disabled = realIndex === 0;
-    el.querySelector('[data-act="down"]').disabled = realIndex === blocks.length - 1;
+    el.querySelector('[data-act="up"]').disabled = b.locked || realIndex === 0;
+    el.querySelector('[data-act="down"]').disabled = b.locked || realIndex === blocks.length - 1;
+    el.querySelector('[data-act="lock"]').addEventListener('click', () => toggleBlockLock(b.id));
 
     const titleInput = el.querySelector('.title-input');
     const textarea = el.querySelector('.content');
@@ -706,15 +888,17 @@ function renderList(){
       btn.addEventListener('click', () => removeTag(b, btn.getAttribute('data-tag')));
     });
     const tagInput = el.querySelector('.tag-input');
-    tagInput.addEventListener('keydown', (e) => {
-      if(e.key === 'Enter' || e.key === ','){
-        e.preventDefault();
+    if(tagInput){
+      tagInput.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ','){
+          e.preventDefault();
+          if(tagInput.value.trim()) addTag(b, tagInput.value);
+        }
+      });
+      tagInput.addEventListener('blur', () => {
         if(tagInput.value.trim()) addTag(b, tagInput.value);
-      }
-    });
-    tagInput.addEventListener('blur', () => {
-      if(tagInput.value.trim()) addTag(b, tagInput.value);
-    });
+      });
+    }
   });
 }
 
@@ -733,6 +917,19 @@ function escapeAttr(s){
 /* ---------- toolbar ---------- */
 document.getElementById('addBlank').addEventListener('click', () => addBlock({}, true));
 document.getElementById('addFromFiles').addEventListener('click', () => fileInput.click());
+
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value;
+  searchClear.hidden = searchQuery.length === 0;
+  render();
+});
+searchClear.addEventListener('click', () => {
+  searchQuery = '';
+  searchInput.value = '';
+  searchClear.hidden = true;
+  render();
+  searchInput.focus();
+});
 
 fileInput.addEventListener('change', async (e) => {
   const files = Array.from(e.target.files || []);
@@ -791,9 +988,12 @@ clearAllBtn.addEventListener('click', () => {
   showToast('すべて削除しました');
 });
 
+/* ---------- boot ---------- */
 sealBtn.addEventListener('click', shareAll);
-
-loadState();
+(async () => {
+  await detectCloudStorage();
+  await loadState();
+})();
 </script>
 </body>
 </html>
