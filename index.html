@@ -41,7 +41,7 @@
     font-family:"Noto Sans JP", sans-serif;
     -webkit-font-smoothing:antialiased;
     min-height:100vh;
-    padding-bottom:calc(96px + env(safe-area-inset-bottom));
+    padding-bottom:calc(32px + env(safe-area-inset-bottom));
   }
   .bg-texture{
     position:fixed; inset:0; pointer-events:none; z-index:0;
@@ -166,11 +166,6 @@
   }
   .search-clear:hover{ color:var(--seal); }
 
-  textarea.content[readonly]{
-    color:var(--ink);
-    cursor:default;
-  }
-
   .empty{
     border:1.5px dashed var(--line);
     border-radius:var(--radius);
@@ -286,16 +281,30 @@
   .icon-btn svg{ width:16px; height:16px; }
   .icon-btn.danger:hover{ color:var(--seal); }
 
-  textarea.content{
-    width:100%; border:none; outline:none; resize:none;
-    font-family:"JetBrains Mono", monospace;
-    font-size:13px; line-height:1.65;
-    color:var(--ink);
-    padding:14px 16px 8px;
-    background:transparent;
-    min-height:64px;
+  .grip-handle{
+    width:24px; height:30px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft);
+    cursor:grab;
+    touch-action:none;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
   }
-  textarea.content::placeholder{ color:#B9AF9C; font-family:"Noto Sans JP",sans-serif; }
+  .grip-handle svg{ width:15px; height:15px; }
+  .grip-handle.is-disabled{ opacity:.3; cursor:default; }
+
+  .block.dragging{
+    opacity:.94;
+    box-shadow:0 14px 28px rgba(0,0,0,0.2);
+    position:relative;
+  }
+  .drop-indicator{
+    height:3px; border-radius:2px;
+    background:var(--accent);
+    margin:0 0 12px;
+  }
 
   .tag-row{
     display:flex; flex-wrap:wrap; align-items:center; gap:6px;
@@ -347,51 +356,9 @@
     font-family:"JetBrains Mono", monospace;
   }
 
-  .seal-wrap{
-    position:fixed;
-    bottom:calc(22px + env(safe-area-inset-bottom)); right:calc(22px + env(safe-area-inset-right));
-    z-index:20;
-  }
-  .seal{
-    width:64px; height:64px;
-    border-radius:50%;
-    background:radial-gradient(circle at 32% 28%, #c75942, var(--seal) 55%, var(--seal-deep) 100%);
-    color:#fff;
-    border:none;
-    box-shadow:0 6px 16px rgba(181,72,47,0.4), 0 2px 4px rgba(0,0,0,0.15);
-    cursor:pointer;
-    display:flex; flex-direction:column; align-items:center; justify-content:center;
-    font-family:"Shippori Mincho", serif;
-    font-size:20px;
-    font-weight:700;
-    letter-spacing:.05em;
-    transition:transform .15s ease;
-    -webkit-tap-highlight-color:transparent;
-    position:relative;
-  }
-  .seal:active{ transform:scale(.88) rotate(-6deg); }
-  .seal:disabled{ opacity:.35; box-shadow:none; cursor:not-allowed; }
-  .seal-label{
-    font-size:7px;
-    font-family:"Noto Sans JP",sans-serif;
-    font-weight:500;
-    letter-spacing:.05em;
-    margin-top:1px;
-  }
-  .seal-badge{
-    position:absolute; top:-4px; right:-4px;
-    background:var(--accent); color:#fff;
-    font-family:"JetBrains Mono",monospace;
-    font-size:10px;
-    min-width:18px; height:18px; border-radius:999px;
-    display:flex; align-items:center; justify-content:center;
-    padding:0 4px;
-    box-shadow:0 1px 3px rgba(0,0,0,.3);
-  }
-
   .toast{
     position:fixed;
-    bottom:96px; left:50%;
+    bottom:calc(28px + env(safe-area-inset-bottom)); left:50%;
     transform:translateX(-50%) translateY(10px);
     background:var(--ink);
     color:#fff;
@@ -421,7 +388,7 @@
   <header>
     <div class="eyebrow">PLAIN TEXT BUNDLER</div>
     <h1>ひとまとめ便</h1>
-    <p>iPhoneの「ファイル」アプリにあるテキスト・PDFをまとめて読み込み、タグで整理して、ワンタップで送る。<br>コピーは常にプレーンテキストのみ。内容は自動保存され、閉じても消えません。</p>
+    <p>iPhoneの「ファイル」アプリにあるテキスト・PDFをまとめて読み込み、タグで整理して、メモごとにワンタップで送る。<br>コピーは常にプレーンテキストのみ。内容は自動保存され、閉じても消えません。</p>
   </header>
 
   <div class="toolbar">
@@ -458,12 +425,6 @@
   <footer>内容・タグ・並び順・各メモのロック状態は自動的に保存されます<br>同じファイルを再度読み込んでも二重には追加されません<br>スキャンのみのPDF（画像PDF）は文字を取得できない場合があります</footer>
 </div>
 
-<div class="seal-wrap">
-  <button class="seal" id="sealBtn" disabled title="まとめて送信 / ファイルに保存 / コピー">
-    送<span class="seal-label">送信</span>
-  </button>
-</div>
-
 <div class="toast" id="toast">
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
   <span id="toastText">コピーしました</span>
@@ -480,6 +441,9 @@
     <div class="detail-bar-spacer"></div>
     <button class="icon-btn" id="detailLockBtn" title="このメモをロック">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    </button>
+    <button class="icon-btn" id="detailShareBtn" title="このメモを送信">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
     </button>
     <button class="icon-btn danger" id="detailDelBtn" title="削除">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
@@ -548,7 +512,6 @@ let searchQuery = '';
 const listEl = document.getElementById('list');
 const filterBarEl = document.getElementById('filterBar');
 const countChip = document.getElementById('countChip');
-const sealBtn = document.getElementById('sealBtn');
 const toast = document.getElementById('toast');
 const toastText = document.getElementById('toastText');
 const fileInput = document.getElementById('fileInput');
@@ -712,15 +675,6 @@ function removeBlock(id){
   scheduleSave();
 }
 
-function moveBlock(id, dir){
-  const i = blocks.findIndex(b => b.id === id);
-  const j = i + dir;
-  if(j < 0 || j >= blocks.length) return;
-  [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
-  render();
-  scheduleSave();
-}
-
 function toggleBlockLock(id){
   const b = blocks.find(x => x.id === id);
   if(!b) return;
@@ -728,6 +682,104 @@ function toggleBlockLock(id){
   render();
   scheduleSave();
   showToast(b.locked ? 'このメモをロックしました' : 'ロックを解除しました');
+}
+
+/* ---------- reorder (長押しドラッグ) ---------- */
+const LONG_PRESS_MS = 420;
+const MOVE_CANCEL_PX = 10;
+
+function startLongPress(e, id, cardEl){
+  if(e.pointerType === 'mouse' && e.button !== 0) return;
+  const startX = e.clientX;
+  const startY = e.clientY;
+  let cancelled = false;
+
+  const timer = setTimeout(() => {
+    if(cancelled) return;
+    cleanup();
+    beginDrag(id, cardEl, e.pointerId, startY);
+  }, LONG_PRESS_MS);
+
+  const onMove = (ev) => {
+    if(Math.abs(ev.clientY - startY) > MOVE_CANCEL_PX || Math.abs(ev.clientX - startX) > MOVE_CANCEL_PX){
+      cancelled = true;
+      cleanup();
+    }
+  };
+  const onUp = () => { cancelled = true; cleanup(); };
+  function cleanup(){
+    clearTimeout(timer);
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+  }
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+}
+
+function beginDrag(id, cardEl, pointerId, startY){
+  cardEl.classList.add('dragging');
+  try{ cardEl.setPointerCapture(pointerId); }catch(e){}
+
+  const indicator = document.createElement('div');
+  indicator.className = 'drop-indicator';
+  let placed = false;
+
+  const siblings = () => Array.from(listEl.querySelectorAll('.block')).filter(x => x !== cardEl);
+
+  const positionIndicator = (clientY) => {
+    const sibs = siblings();
+    let target = null;
+    for(const sib of sibs){
+      const r = sib.getBoundingClientRect();
+      if(clientY < r.top + r.height / 2){ target = sib; break; }
+    }
+    if(target){
+      listEl.insertBefore(indicator, target);
+    }else{
+      listEl.appendChild(indicator);
+    }
+    placed = true;
+  };
+
+  positionIndicator(startY);
+
+  const onMove = (ev) => {
+    if(ev.pointerId !== pointerId) return;
+    ev.preventDefault();
+    const dy = ev.clientY - startY;
+    cardEl.style.transform = `translateY(${dy}px)`;
+    positionIndicator(ev.clientY);
+  };
+
+  const onUp = (ev) => {
+    if(ev.pointerId !== pointerId) return;
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+    try{ cardEl.releasePointerCapture(pointerId); }catch(e){}
+    cardEl.classList.remove('dragging');
+    cardEl.style.transform = '';
+
+    if(placed){
+      const nextEl = indicator.nextElementSibling;
+      const targetId = nextEl && nextEl.classList.contains('block') ? Number(nextEl.dataset.id) : null;
+      const fromIndex = blocks.findIndex(x => x.id === id);
+      if(fromIndex !== -1){
+        const [item] = blocks.splice(fromIndex, 1);
+        const toIndex = targetId !== null ? blocks.findIndex(x => x.id === targetId) : blocks.length;
+        blocks.splice(toIndex === -1 ? blocks.length : toIndex, 0, item);
+      }
+    }
+    indicator.remove();
+    render();
+    scheduleSave();
+  };
+
+  window.addEventListener('pointermove', onMove, { passive: false });
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
 }
 
 function addTag(b, raw){
@@ -796,18 +848,20 @@ async function copyText(text, msg){
   }
 }
 
-function buildFileName(){
+function buildFileName(title){
+  const safe = (title || '').trim().replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+  if(safe) return `${safe}.txt`;
   const d = new Date();
   const pad = n => String(n).padStart(2, '0');
   return `ひとまとめ_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.txt`;
 }
 
-async function shareAll(){
-  const list = visibleBlocks();
-  const text = combinedText(list);
+async function shareBlock(b){
+  if(!b) return;
+  const text = combinedText([b]);
   if(!text.trim()) return;
 
-  const filename = buildFileName();
+  const filename = buildFileName(b.title);
   let file = null;
   try{
     file = new File([text], filename, { type: 'text/plain' });
@@ -846,16 +900,6 @@ function render(){
   countChip.textContent = isFiltering()
     ? `${vis.length} / ${blocks.length}件`
     : `${blocks.length}件`;
-  sealBtn.disabled = vis.length === 0;
-
-  const existingBadge = sealBtn.querySelector('.seal-badge');
-  if(existingBadge) existingBadge.remove();
-  if(isFiltering() && vis.length > 0){
-    const badge = document.createElement('span');
-    badge.className = 'seal-badge';
-    badge.textContent = vis.length;
-    sealBtn.appendChild(badge);
-  }
 }
 
 function renderTagSuggestions(){
@@ -922,6 +966,7 @@ function renderList(){
   list.forEach((b, i) => {
     const el = document.createElement('div');
     el.className = 'block' + (b.locked ? ' is-locked' : '');
+    el.dataset.id = b.id;
     const tagsHtml = b.tags.map(t => {
       const c = tagColor(t);
       const removeBtn = b.locked ? '' : `<button data-tag="${escapeAttr(t)}" class="tag-remove">×</button>`;
@@ -930,9 +975,13 @@ function renderList(){
     const titleHtml = b.title.trim()
       ? `<span class="title-text">${escapeHtml(b.title.trim())}</span>`
       : `<span class="title-text title-placeholder">（無題）</span>`;
+    const dragDisabled = b.locked || isFiltering();
 
     el.innerHTML = `
       <div class="block-head">
+        <span class="grip-handle${dragDisabled ? ' is-disabled' : ''}" title="長押しで並び替え">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+        </span>
         <span class="idx">${String(i+1).padStart(2,'0')}</span>
         <button type="button" class="title-display" data-act="open">
           ${titleHtml}
@@ -940,17 +989,13 @@ function renderList(){
         <button class="icon-btn${b.locked ? ' lock-active' : ''}" data-act="lock" title="${b.locked ? 'ロック解除' : 'このメモをロック'}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
         </button>
-        <button class="icon-btn" data-act="up" title="上に移動" ${b.locked ? 'disabled' : ''}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15 12 9l-6 6"/></svg>
-        </button>
-        <button class="icon-btn" data-act="down" title="下に移動" ${b.locked ? 'disabled' : ''}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+        <button class="icon-btn" data-act="share" title="このメモを送信">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
         </button>
         <button class="icon-btn danger" data-act="del" title="削除" ${b.locked ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
         </button>
       </div>
-      <textarea class="content" placeholder="ここに文章を貼り付け" ${b.locked ? 'readonly' : ''}>${escapeHtml(b.content)}</textarea>
       <div class="tag-row">
         ${tagsHtml}
         ${b.locked ? '' : '<input class="tag-input" type="text" placeholder="+ タグ" list="tagSuggestions">'}
@@ -964,22 +1009,18 @@ function renderList(){
     `;
     listEl.appendChild(el);
 
-    const realIndex = blocks.findIndex(x => x.id === b.id);
-    el.querySelector('[data-act="up"]').disabled = b.locked || realIndex === 0;
-    el.querySelector('[data-act="down"]').disabled = b.locked || realIndex === blocks.length - 1;
+    const gripHandle = el.querySelector('.grip-handle');
+    if(!dragDisabled){
+      gripHandle.addEventListener('pointerdown', (e) => startLongPress(e, b.id, el));
+    }else{
+      gripHandle.addEventListener('click', () => {
+        showToast(b.locked ? 'ロック中は並び替えできません' : '検索・絞り込み中は並び替えできません');
+      });
+    }
+
     el.querySelector('[data-act="lock"]').addEventListener('click', () => toggleBlockLock(b.id));
     el.querySelector('[data-act="open"]').addEventListener('click', () => openDetail(b.id));
-
-    const textarea = el.querySelector('.content');
-    textarea.addEventListener('input', () => {
-      b.content = textarea.value;
-      autoGrow(textarea);
-      scheduleSave();
-    });
-    autoGrow(textarea);
-
-    el.querySelector('[data-act="up"]').addEventListener('click', () => moveBlock(b.id, -1));
-    el.querySelector('[data-act="down"]').addEventListener('click', () => moveBlock(b.id, 1));
+    el.querySelector('[data-act="share"]').addEventListener('click', () => shareBlock(b));
     el.querySelector('[data-act="del"]').addEventListener('click', () => removeBlock(b.id));
     el.querySelector('[data-act="copyone"]').addEventListener('click', () => {
       const text = combinedText([b]);
@@ -1022,6 +1063,7 @@ const detailView = document.getElementById('detailView');
 const detailBack = document.getElementById('detailBack');
 const detailIdx = document.getElementById('detailIdx');
 const detailLockBtn = document.getElementById('detailLockBtn');
+const detailShareBtn = document.getElementById('detailShareBtn');
 const detailDelBtn = document.getElementById('detailDelBtn');
 const detailTitleInput = document.getElementById('detailTitleInput');
 const detailTagRow = document.getElementById('detailTagRow');
@@ -1121,6 +1163,11 @@ detailLockBtn.addEventListener('click', () => {
   if(currentDetailId == null) return;
   toggleBlockLock(currentDetailId);
   renderDetail();
+});
+
+detailShareBtn.addEventListener('click', () => {
+  const b = blocks.find(x => x.id === currentDetailId);
+  shareBlock(b);
 });
 
 detailDelBtn.addEventListener('click', () => {
@@ -1223,7 +1270,6 @@ clearAllBtn.addEventListener('click', () => {
 });
 
 /* ---------- boot ---------- */
-sealBtn.addEventListener('click', shareAll);
 (async () => {
   await detectCloudStorage();
   await loadState();
