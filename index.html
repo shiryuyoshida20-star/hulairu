@@ -1,4 +1,4 @@
-index.html<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
@@ -74,8 +74,8 @@ index.html<!DOCTYPE html>
   }
 
   .toolbar{
-    display:flex; gap:8px; flex-wrap:wrap;
-    margin-bottom:18px;
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    margin-bottom:14px;
   }
   .btn{
     font-family:"Noto Sans JP", sans-serif;
@@ -87,12 +87,13 @@ index.html<!DOCTYPE html>
     border-radius:999px;
     cursor:pointer;
     display:inline-flex; align-items:center; gap:6px;
-    transition:transform .12s ease, background .15s ease, border-color .15s ease;
+    transition:transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease;
     -webkit-tap-highlight-color:transparent;
   }
   .btn:active{ transform:scale(.96); }
   .btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
   .btn.ghost{ background:transparent; }
+  .btn.danger-confirm{ background:var(--seal); color:#fff; border-color:var(--seal); }
   .btn:disabled{ opacity:.4; cursor:not-allowed; }
   .btn svg{ width:15px; height:15px; flex:none; }
 
@@ -109,6 +110,24 @@ index.html<!DOCTYPE html>
 
   #fileInput{ display:none; }
 
+  .filter-bar{
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin-bottom:14px;
+  }
+  .filter-chip{
+    font-family:"JetBrains Mono", monospace;
+    font-size:11px;
+    padding:5px 11px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .filter-chip.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .filter-chip.clear{ color:var(--seal); border-color:transparent; background:transparent; }
+
   .empty{
     border:1.5px dashed var(--line);
     border-radius:var(--radius);
@@ -119,6 +138,10 @@ index.html<!DOCTYPE html>
     line-height:1.8;
   }
   .empty strong{ color:var(--ink); display:block; font-size:15px; margin-bottom:6px; font-family:"Shippori Mincho",serif; font-weight:700;}
+  .loading{
+    text-align:center; padding:40px 20px; color:var(--ink-soft);
+    font-family:"JetBrains Mono",monospace; font-size:12.5px;
+  }
 
   .block{
     background:#fff;
@@ -173,15 +196,42 @@ index.html<!DOCTYPE html>
     font-family:"JetBrains Mono", monospace;
     font-size:13px; line-height:1.65;
     color:var(--ink);
-    padding:14px 16px 12px;
+    padding:14px 16px 8px;
     background:transparent;
     min-height:64px;
   }
   textarea.content::placeholder{ color:#B9AF9C; font-family:"Noto Sans JP",sans-serif; }
 
+  .tag-row{
+    display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+    padding:0 16px 12px;
+  }
+  .tag-pill{
+    display:inline-flex; align-items:center; gap:4px;
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;
+    padding:4px 6px 4px 10px;
+    border-radius:999px;
+    line-height:1;
+  }
+  .tag-pill button{
+    border:none; background:transparent; color:inherit;
+    cursor:pointer; font-size:13px; line-height:1; padding:0 2px;
+    opacity:.55;
+  }
+  .tag-pill button:hover{ opacity:1; }
+  .tag-input{
+    border:none; background:transparent; outline:none;
+    font-family:"JetBrains Mono",monospace;
+    font-size:11.5px; color:var(--ink-soft);
+    padding:4px 6px; min-width:70px; flex:1;
+  }
+  .tag-input:focus{ color:var(--ink); }
+  .tag-input::placeholder{ color:#C2B9A6; }
+
   .block-foot{
     display:flex; justify-content:flex-end; gap:4px;
-    padding:4px 8px 8px;
+    padding:0 8px 8px;
   }
   .mini{
     font-family:"JetBrains Mono",monospace;
@@ -202,7 +252,6 @@ index.html<!DOCTYPE html>
     font-family:"JetBrains Mono", monospace;
   }
 
-  /* Floating seal button — signature element */
   .seal-wrap{
     position:fixed;
     bottom:22px; right:22px;
@@ -223,6 +272,7 @@ index.html<!DOCTYPE html>
     letter-spacing:.05em;
     transition:transform .15s ease;
     -webkit-tap-highlight-color:transparent;
+    position:relative;
   }
   .seal:active{ transform:scale(.88) rotate(-6deg); }
   .seal:disabled{ opacity:.35; box-shadow:none; cursor:not-allowed; }
@@ -233,8 +283,17 @@ index.html<!DOCTYPE html>
     letter-spacing:.05em;
     margin-top:1px;
   }
+  .seal-badge{
+    position:absolute; top:-4px; right:-4px;
+    background:var(--accent); color:#fff;
+    font-family:"JetBrains Mono",monospace;
+    font-size:10px;
+    min-width:18px; height:18px; border-radius:999px;
+    display:flex; align-items:center; justify-content:center;
+    padding:0 4px;
+    box-shadow:0 1px 3px rgba(0,0,0,.3);
+  }
 
-  /* Toast */
   .toast{
     position:fixed;
     bottom:96px; left:50%;
@@ -250,6 +309,7 @@ index.html<!DOCTYPE html>
     z-index:30;
     white-space:nowrap;
     display:flex; align-items:center; gap:6px;
+    max-width:90vw;
   }
   .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
   .toast svg{ width:14px; height:14px; color:#7CC68A; flex:none; }
@@ -266,7 +326,7 @@ index.html<!DOCTYPE html>
   <header>
     <div class="eyebrow">PLAIN TEXT BUNDLER</div>
     <h1>ひとまとめ便</h1>
-    <p>iPhoneの「ファイル」アプリにある文章をまとめて読み込み、整えて、ワンタップで送る。<br>コピーはすべてプレーンテキスト ── 貼り先で書式が崩れることはありません。</p>
+    <p>iPhoneの「ファイル」アプリにある文章をまとめて読み込み、タグで整理して、ワンタップで送る。<br>コピーは常にプレーンテキストのみ。内容は自動保存され、閉じても消えません。</p>
   </header>
 
   <div class="toolbar">
@@ -278,13 +338,19 @@ index.html<!DOCTYPE html>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
       空のメモを追加
     </button>
+    <button class="btn ghost" id="clearAll">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+      全部削除
+    </button>
     <span class="count-chip" id="countChip">0件</span>
   </div>
   <input type="file" id="fileInput" multiple accept=".txt,.md,.csv,.log,.json,text/plain">
 
-  <div id="list"></div>
+  <div class="filter-bar" id="filterBar"></div>
 
-  <footer>このページを閉じる・更新すると内容は消えます（どこにも保存されません）</footer>
+  <div id="list"><div class="loading">読み込み中…</div></div>
+
+  <footer>内容・タグ・並び順は自動的に保存されます<br>同じファイルを再度読み込んでも二重には追加されません</footer>
 </div>
 
 <div class="seal-wrap">
@@ -298,31 +364,101 @@ index.html<!DOCTYPE html>
   <span id="toastText">コピーしました</span>
 </div>
 
+<datalist id="tagSuggestions"></datalist>
+
 <script>
+const STORAGE_KEY = 'hitomatome:blocks';
+
 let blocks = [];
 let idSeed = 1;
+let activeFilters = new Set();
+let clearArmed = false;
 
 const listEl = document.getElementById('list');
+const filterBarEl = document.getElementById('filterBar');
 const countChip = document.getElementById('countChip');
 const sealBtn = document.getElementById('sealBtn');
 const toast = document.getElementById('toast');
 const toastText = document.getElementById('toastText');
 const fileInput = document.getElementById('fileInput');
+const clearAllBtn = document.getElementById('clearAll');
+const tagSuggestions = document.getElementById('tagSuggestions');
+
+const TAG_PALETTE = [
+  {bg:'#DCE6EE', fg:'#2D4A6B'},
+  {bg:'#F3DCD3', fg:'#8E3522'},
+  {bg:'#DCE9DE', fg:'#3F7A4D'},
+  {bg:'#EAE1F5', fg:'#5B3E8E'},
+  {bg:'#F5E6C8', fg:'#8A6A1F'},
+  {bg:'#D9EDEC', fg:'#1F6E68'},
+];
+
+function tagColor(tag){
+  let h = 0;
+  for(let i=0;i<tag.length;i++) h = (h*31 + tag.charCodeAt(i)) >>> 0;
+  return TAG_PALETTE[h % TAG_PALETTE.length];
+}
+
+function hashStr(s){
+  let h = 5381;
+  for(let i=0;i<s.length;i++){
+    h = ((h<<5)+h) + s.charCodeAt(i);
+    h = h | 0;
+  }
+  return (h>>>0).toString(36);
+}
 
 function showToast(msg){
   toastText.textContent = msg;
   toast.classList.add('show');
   clearTimeout(toast._t);
-  toast._t = setTimeout(()=> toast.classList.remove('show'), 1800);
+  toast._t = setTimeout(()=> toast.classList.remove('show'), 2200);
 }
 
 function stripExt(name){
   return name.replace(/\.[^./\\]+$/, '');
 }
 
-function addBlock(title, content, focus){
-  blocks.push({ id: idSeed++, title: title || '', content: content || '' });
+/* ---------- storage ---------- */
+let saveTimer = null;
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 450);
+}
+async function saveState(){
+  try{
+    await window.storage.set(STORAGE_KEY, JSON.stringify(blocks), false);
+  }catch(e){
+    console.error('save failed', e);
+  }
+}
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && typeof res.value === 'string'){
+      const parsed = JSON.parse(res.value);
+      if(Array.isArray(parsed)) blocks = parsed;
+    }
+  }catch(e){
+    blocks = [];
+  }
+  blocks.forEach(b => { if(!Array.isArray(b.tags)) b.tags = []; });
+  idSeed = blocks.reduce((m,b)=>Math.max(m, b.id||0), 0) + 1;
   render();
+}
+
+/* ---------- block ops ---------- */
+function addBlock(opts, focus){
+  opts = opts || {};
+  blocks.push({
+    id: idSeed++,
+    title: opts.title || '',
+    content: opts.content || '',
+    tags: opts.tags || [],
+    fingerprint: opts.fingerprint || null
+  });
+  render();
+  scheduleSave();
   if(focus){
     requestAnimationFrame(()=>{
       const last = listEl.querySelector('.block:last-child textarea');
@@ -334,6 +470,7 @@ function addBlock(title, content, focus){
 function removeBlock(id){
   blocks = blocks.filter(b => b.id !== id);
   render();
+  scheduleSave();
 }
 
 function moveBlock(id, dir){
@@ -342,12 +479,39 @@ function moveBlock(id, dir){
   if(j < 0 || j >= blocks.length) return;
   [blocks[i], blocks[j]] = [blocks[j], blocks[i]];
   render();
+  scheduleSave();
 }
 
-function combinedText(){
-  return blocks.map(b => {
+function addTag(b, raw){
+  raw.split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>{
+    if(!b.tags.includes(t)) b.tags.push(t);
+  });
+  render();
+  scheduleSave();
+}
+function removeTag(b, tag){
+  b.tags = b.tags.filter(t => t !== tag);
+  render();
+  scheduleSave();
+}
+
+function allTags(){
+  const set = new Set();
+  blocks.forEach(b => b.tags.forEach(t => set.add(t)));
+  return Array.from(set).sort();
+}
+
+function visibleBlocks(){
+  if(activeFilters.size === 0) return blocks;
+  return blocks.filter(b => b.tags.some(t => activeFilters.has(t)));
+}
+
+function combinedText(list){
+  return list.map(b => {
     const body = b.content.trim();
-    return b.title.trim() ? `▼ ${b.title.trim()}\n${body}` : body;
+    const head = b.title.trim() ? `▼ ${b.title.trim()}` : null;
+    const tagLine = b.tags.length ? `[${b.tags.join(' / ')}]` : null;
+    return [head, tagLine, body].filter(Boolean).join('\n');
   }).join('\n\n──────────\n\n');
 }
 
@@ -356,7 +520,6 @@ async function copyText(text, msg){
     await navigator.clipboard.writeText(text);
     showToast(msg || 'コピーしました');
   }catch(e){
-    // fallback
     const ta = document.createElement('textarea');
     ta.value = text;
     ta.style.position = 'fixed';
@@ -370,23 +533,74 @@ async function copyText(text, msg){
 }
 
 async function shareAll(){
-  const text = combinedText();
+  const list = visibleBlocks();
+  const text = combinedText(list);
   if(!text.trim()) return;
   if(navigator.share){
     try{
       await navigator.share({ text });
       return;
     }catch(e){
-      if(e && e.name === 'AbortError') return; // user cancelled
-      // fall through to copy
+      if(e && e.name === 'AbortError') return;
     }
   }
   copyText(text, 'コピーしました（共有はこの環境では使えません）');
 }
 
+/* ---------- render ---------- */
 function render(){
-  countChip.textContent = blocks.length + '件';
-  sealBtn.disabled = blocks.length === 0;
+  renderFilterBar();
+  renderList();
+  renderTagSuggestions();
+
+  const vis = visibleBlocks();
+  countChip.textContent = activeFilters.size === 0
+    ? `${blocks.length}件`
+    : `${vis.length} / ${blocks.length}件`;
+  sealBtn.disabled = vis.length === 0;
+
+  const existingBadge = sealBtn.querySelector('.seal-badge');
+  if(existingBadge) existingBadge.remove();
+  if(activeFilters.size > 0 && vis.length > 0){
+    const badge = document.createElement('span');
+    badge.className = 'seal-badge';
+    badge.textContent = vis.length;
+    sealBtn.appendChild(badge);
+  }
+}
+
+function renderTagSuggestions(){
+  tagSuggestions.innerHTML = allTags().map(t => `<option value="${escapeAttr(t)}">`).join('');
+}
+
+function renderFilterBar(){
+  const tags = allTags();
+  if(tags.length === 0){
+    filterBarEl.innerHTML = '';
+    return;
+  }
+  let html = tags.map(t => {
+    const active = activeFilters.has(t);
+    return `<button class="filter-chip ${active ? 'active' : ''}" data-tag="${escapeAttr(t)}">${escapeHtml(t)}</button>`;
+  }).join('');
+  if(activeFilters.size > 0){
+    html += `<button class="filter-chip clear" id="clearFilter">すべて表示</button>`;
+  }
+  filterBarEl.innerHTML = html;
+
+  filterBarEl.querySelectorAll('[data-tag]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.getAttribute('data-tag');
+      if(activeFilters.has(t)) activeFilters.delete(t); else activeFilters.add(t);
+      render();
+    });
+  });
+  const clearBtn = document.getElementById('clearFilter');
+  if(clearBtn) clearBtn.addEventListener('click', () => { activeFilters.clear(); render(); });
+}
+
+function renderList(){
+  const list = visibleBlocks();
 
   if(blocks.length === 0){
     listEl.innerHTML = `
@@ -397,19 +611,32 @@ function render(){
       </div>`;
     return;
   }
+  if(list.length === 0){
+    listEl.innerHTML = `
+      <div class="empty">
+        <strong>このタグの項目はありません</strong>
+        フィルターを変えるか「すべて表示」を押してください。
+      </div>`;
+    return;
+  }
 
   listEl.innerHTML = '';
-  blocks.forEach((b, i) => {
+  list.forEach((b, i) => {
     const el = document.createElement('div');
     el.className = 'block';
+    const tagsHtml = b.tags.map(t => {
+      const c = tagColor(t);
+      return `<span class="tag-pill" style="background:${c.bg};color:${c.fg}">${escapeHtml(t)}<button data-tag="${escapeAttr(t)}" class="tag-remove">×</button></span>`;
+    }).join('');
+
     el.innerHTML = `
       <div class="block-head">
         <span class="idx">${String(i+1).padStart(2,'0')}</span>
         <input class="title-input" type="text" placeholder="タイトル（任意）" value="${escapeAttr(b.title)}">
-        <button class="icon-btn" data-act="up" ${i===0 ? 'disabled' : ''} title="上に移動">
+        <button class="icon-btn" data-act="up" title="上に移動">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 15 12 9l-6 6"/></svg>
         </button>
-        <button class="icon-btn" data-act="down" ${i===blocks.length-1 ? 'disabled' : ''} title="下に移動">
+        <button class="icon-btn" data-act="down" title="下に移動">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
         </button>
         <button class="icon-btn danger" data-act="del" title="削除">
@@ -417,6 +644,10 @@ function render(){
         </button>
       </div>
       <textarea class="content" placeholder="ここに文章を貼り付け">${escapeHtml(b.content)}</textarea>
+      <div class="tag-row">
+        ${tagsHtml}
+        <input class="tag-input" type="text" placeholder="+ タグ" list="tagSuggestions">
+      </div>
       <div class="block-foot">
         <button class="mini" data-act="copyone">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
@@ -426,12 +657,17 @@ function render(){
     `;
     listEl.appendChild(el);
 
+    const realIndex = blocks.findIndex(x => x.id === b.id);
+    el.querySelector('[data-act="up"]').disabled = realIndex === 0;
+    el.querySelector('[data-act="down"]').disabled = realIndex === blocks.length - 1;
+
     const titleInput = el.querySelector('.title-input');
     const textarea = el.querySelector('.content');
-    titleInput.addEventListener('input', () => { b.title = titleInput.value; });
+    titleInput.addEventListener('input', () => { b.title = titleInput.value; scheduleSave(); });
     textarea.addEventListener('input', () => {
       b.content = textarea.value;
       autoGrow(textarea);
+      scheduleSave();
     });
     autoGrow(textarea);
 
@@ -439,8 +675,22 @@ function render(){
     el.querySelector('[data-act="down"]').addEventListener('click', () => moveBlock(b.id, 1));
     el.querySelector('[data-act="del"]').addEventListener('click', () => removeBlock(b.id));
     el.querySelector('[data-act="copyone"]').addEventListener('click', () => {
-      const text = b.title.trim() ? `▼ ${b.title.trim()}\n${b.content.trim()}` : b.content.trim();
+      const text = combinedText([b]);
       copyText(text);
+    });
+
+    el.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.addEventListener('click', () => removeTag(b, btn.getAttribute('data-tag')));
+    });
+    const tagInput = el.querySelector('.tag-input');
+    tagInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ','){
+        e.preventDefault();
+        if(tagInput.value.trim()) addTag(b, tagInput.value);
+      }
+    });
+    tagInput.addEventListener('blur', () => {
+      if(tagInput.value.trim()) addTag(b, tagInput.value);
     });
   });
 }
@@ -457,27 +707,62 @@ function escapeAttr(s){
   return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 }
 
-document.getElementById('addBlank').addEventListener('click', () => addBlock('', '', true));
+/* ---------- toolbar ---------- */
+document.getElementById('addBlank').addEventListener('click', () => addBlock({}, true));
 document.getElementById('addFromFiles').addEventListener('click', () => fileInput.click());
 
 fileInput.addEventListener('change', async (e) => {
   const files = Array.from(e.target.files || []);
   if(files.length === 0) return;
-  let loaded = 0;
+  let loaded = 0, skipped = 0;
   for(const file of files){
     try{
       const text = await file.text();
-      addBlock(stripExt(file.name), text, false);
+      const fp = file.name + '::' + hashStr(text);
+      if(blocks.some(b => b.fingerprint === fp)){
+        skipped++;
+        continue;
+      }
+      addBlock({ title: stripExt(file.name), content: text, fingerprint: fp }, false);
       loaded++;
     }catch(err){ /* skip unreadable file */ }
   }
   fileInput.value = '';
-  if(loaded > 0) showToast(`${loaded}件読み込みました`);
+  if(loaded > 0 && skipped > 0){
+    showToast(`${loaded}件読み込み（${skipped}件は重複でスキップ）`);
+  }else if(loaded > 0){
+    showToast(`${loaded}件読み込みました`);
+  }else if(skipped > 0){
+    showToast(`すべて既に追加済みでした（${skipped}件）`);
+  }
+});
+
+clearAllBtn.addEventListener('click', () => {
+  if(blocks.length === 0) return;
+  if(!clearArmed){
+    clearArmed = true;
+    clearAllBtn.classList.add('danger-confirm');
+    clearAllBtn.querySelector('svg').nextSibling.textContent = 'もう一度押すと全削除';
+    setTimeout(() => {
+      clearArmed = false;
+      clearAllBtn.classList.remove('danger-confirm');
+      clearAllBtn.querySelector('svg').nextSibling.textContent = '全部削除';
+    }, 3000);
+    return;
+  }
+  clearArmed = false;
+  clearAllBtn.classList.remove('danger-confirm');
+  clearAllBtn.querySelector('svg').nextSibling.textContent = '全部削除';
+  blocks = [];
+  activeFilters.clear();
+  render();
+  scheduleSave();
+  showToast('すべて削除しました');
 });
 
 sealBtn.addEventListener('click', shareAll);
 
-render();
+loadState();
 </script>
 </body>
 </html>
