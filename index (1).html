@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>ひとまとめ便</title>
+
+<!-- ホーム画面に追加したときアプリらしく動かすための設定 -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ひとまとめ便">
+<meta name="theme-color" content="#F7F3EC">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
+<style>
+  :root{
+    --paper:#F7F3EC;
+    --paper-deep:#EFE8D9;
+    --line:#E1D8C2;
+    --ink:#2B2A28;
+    --ink-soft:#7A7163;
+    --accent:#2D4A6B;
+    --accent-soft:#DCE6EE;
+    --seal:#B5482F;
+    --seal-deep:#8E3522;
+    --success:#3F7A4D;
+    --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:"Noto Sans JP", sans-serif;
+    -webkit-font-smoothing:antialiased;
+    min-height:100vh;
+    padding-bottom:calc(32px + env(safe-area-inset-bottom));
+  }
+  .bg-texture{
+    position:fixed; inset:0; pointer-events:none; z-index:0;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 27px, rgba(0,0,0,0.018) 28px),
+      repeating-linear-gradient(90deg, transparent, transparent 27px, rgba(0,0,0,0.012) 28px);
+  }
+  .wrap{ position:relative; z-index:1; max-width:640px; margin:0 auto; padding:0 16px; }
+
+  header{
+    padding:28px 4px 18px;
+    border-bottom:1px solid var(--line);
+    margin-bottom:18px;
+  }
+  .eyebrow{
+    font-family:"JetBrains Mono", monospace;
+    font-size:11px;
+    letter-spacing:.12em;
+    color:var(--accent);
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:8px;height:8px;border-radius:50%;
+    background:var(--seal);
+    display:inline-block;
+  }
+  h1{
+    font-family:"Shippori Mincho", serif;
+    font-weight:700;
+    font-size:30px;
+    margin:6px 0 4px;
+    letter-spacing:.02em;
+  }
+  header p{
+    margin:0;
+    font-size:13.5px;
+    color:var(--ink-soft);
+    line-height:1.7;
+  }
+
+  .toolbar{
+    display:flex; gap:8px; flex-wrap:wrap; align-items:center;
+    margin-bottom:14px;
+  }
+  .btn{
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:13.5px; font-weight:500;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink);
+    padding:10px 14px;
+    border-radius:999px;
+    cursor:pointer;
+    display:inline-flex; align-items:center; gap:6px;
+    transition:transform .12s ease, background .15s ease, border-color .15s ease, color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:active{ transform:scale(.96); }
+  .btn.primary{ background:var(--accent); color:#fff; border-color:var(--accent); }
+  .btn.ghost{ background:transparent; }
+  .btn.danger-confirm{ background:var(--seal); color:#fff; border-color:var(--seal); }
+  .btn:disabled{ opacity:.4; cursor:not-allowed; }
+  .btn svg{ width:15px; height:15px; flex:none; }
+
+  .count-chip{
+    font-family:"JetBrains Mono", monospace;
+    font-size:12px;
+    color:var(--accent);
+    background:var(--accent-soft);
+    border-radius:999px;
+    padding:6px 12px;
+    display:inline-flex; align-items:center;
+    margin-left:auto;
+  }
+
+  #fileInput{ display:none; }
+
+  .filter-bar{
+    display:flex; flex-wrap:wrap; gap:6px;
+    margin-bottom:14px;
+  }
+  .filter-chip{
+    font-family:"JetBrains Mono", monospace;
+    font-size:11px;
+    padding:5px 11px;
+    border-radius:999px;
+    border:1px solid var(--line);
+    background:#fff;
+    color:var(--ink-soft);
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .filter-chip.active{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .filter-chip.clear{ color:var(--seal); border-color:transparent; background:transparent; }
+
+  .icon-btn.lock-active{ color:var(--accent); background:var(--accent-soft); }
+  .block.is-locked{ border-color:var(--accent); }
+  .block.is-locked .block-head{ background:var(--accent-soft); }
+
+  .sync-dot{
+    width:7px; height:7px; border-radius:50%;
+    background:#C2B9A6;
+    flex:none;
+  }
+  .sync-dot.connecting{ background:#D6A847; }
+  .sync-dot.synced{ background:var(--success); }
+  .sync-dot.error{ background:var(--seal); }
+
+  .sync-panel{
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:var(--radius);
+    padding:14px 16px;
+    margin-bottom:14px;
+    display:flex; flex-direction:column; gap:10px;
+  }
+  .sync-panel p{ margin:0; font-size:12.5px; color:var(--ink-soft); line-height:1.7; }
+  .sync-panel label{
+    font-size:11.5px; color:var(--ink-soft); font-family:"JetBrains Mono",monospace;
+    display:block; margin-bottom:4px;
+  }
+  .sync-panel textarea{
+    width:100%; min-height:90px;
+    border:1px solid var(--line); border-radius:8px; padding:9px 12px;
+    font-family:"JetBrains Mono",monospace; font-size:12px; line-height:1.6;
+    outline:none; background:var(--paper); resize:vertical;
+    box-sizing:border-box;
+  }
+  .sync-panel textarea:focus, .sync-panel input:focus{ border-color:var(--accent); }
+  .sync-panel input[type="text"]{
+    width:100%; border:1px solid var(--line); border-radius:8px; padding:9px 12px;
+    font-family:"JetBrains Mono",monospace; font-size:13.5px; outline:none;
+    background:var(--paper); box-sizing:border-box;
+  }
+  .sync-status-line{
+    display:flex; align-items:center; gap:7px;
+    font-family:"JetBrains Mono",monospace; font-size:12px; color:var(--ink-soft);
+  }
+  .sync-row{ display:flex; gap:8px; flex-wrap:wrap; }
+
+  .search-bar{
+    display:flex; align-items:center; gap:8px;
+    border:1px solid var(--line);
+    background:#fff;
+    border-radius:999px;
+    padding:9px 14px;
+    margin-bottom:14px;
+  }
+  .search-bar svg{ width:15px; height:15px; color:var(--ink-soft); flex:none; }
+  .search-bar input{
+    flex:1; min-width:0; border:none; outline:none; background:transparent;
+    font-family:"Noto Sans JP", sans-serif;
+    font-size:13.5px; color:var(--ink);
+  }
+  .search-bar input::placeholder{ color:#B9AF9C; }
+  .search-clear{
+    border:none; background:transparent; cursor:pointer;
+    color:var(--ink-soft); font-size:15px; line-height:1; padding:2px 4px;
+  }
+  .search-clear:hover{ color:var(--seal); }
+
+  .empty{
+    border:1.5px dashed var(--line);
+    border-radius:var(--radius);
+    padding:40px 20px;
+    text-align:center;
+    color:var(--ink-soft);
+    font-size:13.5px;
+    line-height:1.8;
+  }
+  .empty strong{ color:var(--ink); display:block; font-size:15px; margin-bottom:6px; font-family:"Shippori Mincho",serif; font-weight:700;}
+  .loading{
+    text-align:center; padding:40px 20px; color:var(--ink-soft);
+    font-family:"JetBrains Mono",monospace; font-size:12.5px;
+  }
+
+  .block{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    margin-bottom:12px;
+    overflow:hidden;
+    box-shadow:0 1px 0 rgba(0,0,0,0.02);
+  }
+  .block-head{
+    display:flex; align-items:center; gap:8px;
+    padding:10px 10px 10px 12px;
+    border-bottom:1px solid var(--line);
+    background:var(--paper-deep);
+  }
+  .idx{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;
+    color:var(--accent);
+    background:var(--accent-soft);
+    border-radius:6px;
+    width:22px; height:22px;
+    display:flex; align-items:center; justify-content:center;
+    flex:none;
+  }
+  .title-display{
+    flex:1; min-width:0;
+    border:none; background:transparent; cursor:pointer;
+    font-family:"Noto Sans JP",sans-serif;
+    font-weight:500; font-size:14.5px;
+    color:var(--ink);
+    padding:6px 4px;
+    display:flex; align-items:center; gap:4px;
+    text-align:left;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .title-display:hover{ color:var(--accent); }
+  .title-display .title-text{
+    overflow:hidden; white-space:nowrap; text-overflow:ellipsis;
+  }
+  .title-placeholder{ color:var(--ink-soft); font-weight:400; }
+
+  .detail-view{
+    position:fixed; inset:0; z-index:55;
+    background:var(--paper);
+    display:flex; flex-direction:column;
+    padding-top:env(safe-area-inset-top);
+    padding-bottom:env(safe-area-inset-bottom);
+  }
+  .detail-view[hidden]{ display:none; }
+  .detail-bar{
+    display:flex; align-items:center; gap:6px;
+    padding:10px 14px;
+    border-bottom:1px solid var(--line);
+    flex:none;
+  }
+  .detail-idx{
+    font-family:"JetBrains Mono",monospace; font-size:11px; color:var(--ink-soft);
+  }
+  .detail-bar-spacer{ flex:1; }
+  .detail-body{
+    flex:1; display:flex; flex-direction:column;
+    overflow:hidden;
+    padding:18px 22px 16px;
+    max-width:640px; width:100%; margin:0 auto;
+    box-sizing:border-box;
+  }
+  .detail-title-input{
+    flex:none;
+    width:100%; border:none; outline:none; background:transparent;
+    font-family:"Shippori Mincho",serif; font-weight:700; font-size:25px;
+    color:var(--ink); padding:4px 0 12px; line-height:1.35;
+    resize:none; overflow:hidden;
+    white-space:pre-wrap; word-break:break-word;
+  }
+  .detail-title-input::placeholder{ color:var(--ink-soft); font-weight:500; }
+  #detailTagRow{ flex:none; padding:0 0 16px; }
+  .detail-content{
+    flex:1;
+    width:100%; min-height:0; border:none; outline:none; resize:none;
+    font-family:"JetBrains Mono",monospace; font-size:14.5px; line-height:1.8;
+    color:var(--ink); background:transparent;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+    padding-bottom:calc(16px + env(safe-area-inset-bottom));
+  }
+  .detail-content::placeholder{ color:#B9AF9C; font-family:"Noto Sans JP",sans-serif; }
+
+  .icon-btn{
+    border:none; background:transparent; cursor:pointer;
+    color:var(--ink-soft);
+    width:30px; height:30px; border-radius:8px;
+    display:flex; align-items:center; justify-content:center;
+    flex:none;
+    transition:background .15s ease, color .15s ease;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .icon-btn:hover{ background:#fff; color:var(--ink); }
+  .icon-btn:disabled{ opacity:.3; cursor:not-allowed; }
+  .icon-btn svg{ width:16px; height:16px; }
+  .icon-btn.danger:hover{ color:var(--seal); }
+
+  .grip-handle{
+    width:24px; height:30px; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    color:var(--ink-soft);
+    cursor:grab;
+    touch-action:none;
+    -webkit-tap-highlight-color:transparent;
+    -webkit-touch-callout:none;
+    -webkit-user-select:none;
+    user-select:none;
+  }
+  .grip-handle svg{ width:15px; height:15px; }
+  .grip-handle.is-disabled{ opacity:.3; cursor:default; }
+
+  .block.dragging{
+    opacity:.94;
+    box-shadow:0 14px 28px rgba(0,0,0,0.2);
+    position:relative;
+  }
+  .drop-indicator{
+    height:3px; border-radius:2px;
+    background:var(--accent);
+    margin:0 0 12px;
+  }
+
+  .tag-row{
+    display:flex; flex-wrap:wrap; align-items:center; gap:6px;
+    padding:0 16px 12px;
+  }
+  .tag-pill{
+    display:inline-flex; align-items:center; gap:4px;
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px;
+    padding:4px 6px 4px 10px;
+    border-radius:999px;
+    line-height:1;
+  }
+  .tag-pill button{
+    border:none; background:transparent; color:inherit;
+    cursor:pointer; font-size:13px; line-height:1; padding:0 2px;
+    opacity:.55;
+  }
+  .tag-pill button:hover{ opacity:1; }
+  .tag-input{
+    border:none; background:transparent; outline:none;
+    font-family:"JetBrains Mono",monospace;
+    font-size:11.5px; color:var(--ink-soft);
+    padding:4px 6px; min-width:70px; flex:1;
+  }
+  .tag-input:focus{ color:var(--ink); }
+  .tag-input::placeholder{ color:#C2B9A6; }
+
+  .block-foot{
+    display:flex; justify-content:flex-end; gap:4px;
+    padding:0 8px 8px;
+  }
+  .mini{
+    font-family:"JetBrains Mono",monospace;
+    font-size:11px; color:var(--ink-soft);
+    background:transparent; border:none; cursor:pointer;
+    padding:5px 9px; border-radius:6px;
+    display:flex; align-items:center; gap:5px;
+  }
+  .mini:hover{ background:var(--accent-soft); color:var(--accent); }
+  .mini svg{ width:12px; height:12px; }
+
+  footer{
+    text-align:center;
+    font-size:11.5px;
+    color:var(--ink-soft);
+    margin-top:24px;
+    line-height:1.8;
+    font-family:"JetBrains Mono", monospace;
+  }
+
+  .toast{
+    position:fixed;
+    bottom:calc(28px + env(safe-area-inset-bottom)); left:50%;
+    transform:translateX(-50%) translateY(10px);
+    background:var(--ink);
+    color:#fff;
+    font-size:13px;
+    padding:10px 18px;
+    border-radius:999px;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .2s ease, transform .2s ease;
+    z-index:30;
+    white-space:nowrap;
+    display:flex; align-items:center; gap:6px;
+    max-width:90vw;
+  }
+  .toast.show{ opacity:1; transform:translateX(-50%) translateY(0); }
+  .toast svg{ width:14px; height:14px; color:#7CC68A; flex:none; }
+
+  @media (prefers-reduced-motion: reduce){
+    .btn, .seal, .icon-btn, .toast{ transition:none; }
+  }
+</style>
+</head>
+<body>
+<div class="bg-texture"></div>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">PLAIN TEXT BUNDLER</div>
+    <h1>ひとまとめ便</h1>
+    <p>iPhoneの「ファイル」アプリにあるテキスト・PDFをまとめて読み込み、タグで整理して、メモごとにワンタップで送る。<br>コピーは常にプレーンテキストのみ。内容は自動保存され、閉じても消えません。</p>
+  </header>
+
+  <div class="toolbar">
+    <button class="btn primary" id="addFromFiles">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
+      ファイルから読み込む
+    </button>
+    <button class="btn ghost" id="addBlank">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      空のメモを追加
+    </button>
+    <button class="btn ghost" id="pasteClipboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg>
+      貼り付けて新規メモ
+    </button>
+    <button class="btn ghost" id="clearAll">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+      全部削除
+    </button>
+    <button class="btn ghost" id="syncToggleBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-15.3 6.4M3 12a9 9 0 0 1 15.3-6.4"/><path d="M21 4v5h-5M3 20v-5h5"/></svg>
+      <span id="syncToggleLabel">クラウド同期</span>
+      <span class="sync-dot" id="syncDot"></span>
+    </button>
+    <span class="count-chip" id="countChip">0件</span>
+  </div>
+  <input type="file" id="fileInput" multiple accept=".txt,.md,.csv,.log,.json,.pdf,text/plain,application/pdf">
+
+  <div class="sync-panel" id="syncPanel" hidden></div>
+
+  <div class="search-bar">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input type="text" id="searchInput" placeholder="タイトル・タグ・本文を検索">
+    <button class="search-clear" id="searchClear" hidden>×</button>
+  </div>
+
+  <div class="filter-bar" id="filterBar"></div>
+
+  <div id="list"><div class="loading">読み込み中…</div></div>
+
+  <footer>内容・タグ・並び順・各メモのロック状態は自動的に保存されます<br>同じファイルを再度読み込んでも二重には追加されません<br>スキャンのみのPDF（画像PDF）は文字を取得できない場合があります</footer>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+  <span id="toastText">コピーしました</span>
+</div>
+
+<datalist id="tagSuggestions"></datalist>
+
+<div class="detail-view" id="detailView" hidden>
+  <div class="detail-bar">
+    <button class="icon-btn" id="detailBack" title="戻る">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    </button>
+    <span class="detail-idx" id="detailIdx">01</span>
+    <div class="detail-bar-spacer"></div>
+    <button class="icon-btn" id="detailLockBtn" title="このメモをロック">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+    </button>
+    <button class="icon-btn" id="detailShareBtn" title="このメモを送信">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+    </button>
+    <button class="icon-btn danger" id="detailDelBtn" title="削除">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+    </button>
+  </div>
+  <div class="detail-body">
+    <textarea id="detailTitleInput" class="detail-title-input" placeholder="タイトル（任意）" rows="1"></textarea>
+    <div class="tag-row" id="detailTagRow"></div>
+    <textarea id="detailContent" class="detail-content" placeholder="ここに文章を貼り付け"></textarea>
+  </div>
+</div>
+
+
+<script>
+const STORAGE_KEY = 'hitomatome:blocks';
+const SYNC_CONFIG_KEY = 'hitomatome:sync-config';
+const SYNC_CODE_KEY = 'hitomatome:sync-code';
+
+/* ---------- Firebase 遅延読み込み ---------- */
+const FIREBASE_APP_SRC = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js';
+const FIREBASE_DB_SRC = 'https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js';
+let firebaseLoadPromise = null;
+function ensureFirebase(){
+  if(window.firebase && window.firebase.database) return Promise.resolve();
+  if(firebaseLoadPromise) return firebaseLoadPromise;
+  firebaseLoadPromise = new Promise((resolve, reject) => {
+    const s1 = document.createElement('script');
+    s1.src = FIREBASE_APP_SRC;
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = FIREBASE_DB_SRC;
+      s2.onload = resolve;
+      s2.onerror = () => { firebaseLoadPromise = null; reject(new Error('firebase-database load failed')); };
+      document.head.appendChild(s2);
+    };
+    s1.onerror = () => { firebaseLoadPromise = null; reject(new Error('firebase-app load failed')); };
+    document.head.appendChild(s1);
+  });
+  return firebaseLoadPromise;
+}
+
+/* ---------- クラウド同期(Firebase Realtime Database) ---------- */
+let syncRef = null;
+let syncStatus = 'idle'; // idle | connecting | synced | error
+let applyingRemote = false;
+let lastPushedJSON = null;
+let firstSyncSnapshot = true;
+
+function getSyncSettings(){
+  try{
+    const cfgRaw = localStorage.getItem(SYNC_CONFIG_KEY);
+    const code = localStorage.getItem(SYNC_CODE_KEY);
+    if(!cfgRaw || !code) return null;
+    return { config: JSON.parse(cfgRaw), code };
+  }catch(e){
+    return null;
+  }
+}
+function saveSyncSettings(config, code){
+  try{
+    localStorage.setItem(SYNC_CONFIG_KEY, JSON.stringify(config));
+    localStorage.setItem(SYNC_CODE_KEY, code);
+  }catch(e){
+    console.error('sync settings save failed', e);
+  }
+}
+function clearSyncSettings(){
+  try{
+    localStorage.removeItem(SYNC_CONFIG_KEY);
+    localStorage.removeItem(SYNC_CODE_KEY);
+  }catch(e){}
+}
+
+function parseFirebaseConfig(raw){
+  let text = (raw || '').trim();
+  const match = text.match(/\{[\s\S]*\}/);
+  if(match) text = match[0];
+  try{
+    const obj = (new Function('return (' + text + ')'))();
+    if(obj && typeof obj === 'object' && obj.apiKey && obj.databaseURL) return obj;
+  }catch(e){}
+  return null;
+}
+
+function sanitizeSyncCode(code){
+  return (code || '').trim().replace(/[.#$\[\]\/\s]/g, '_').slice(0, 80);
+}
+
+async function connectSync(config, code, opts){
+  opts = opts || {};
+  syncStatus = 'connecting';
+  renderSyncPanel();
+  try{
+    await ensureFirebase();
+  }catch(e){
+    syncStatus = 'error';
+    renderSyncPanel();
+    if(!opts.silent) showToast('Firebaseの読み込みに失敗しました');
+    return false;
+  }
+  try{
+    if(firebase.apps.length){
+      try{ await firebase.apps[0].delete(); }catch(e){}
+    }
+    firebase.initializeApp(config);
+    if(syncRef) syncRef.off();
+    firstSyncSnapshot = true;
+    syncRef = firebase.database().ref('hitomatome/' + sanitizeSyncCode(code) + '/blocks');
+  }catch(e){
+    console.error('firebase init failed', e);
+    syncStatus = 'error';
+    renderSyncPanel();
+    if(!opts.silent) showToast('接続に失敗しました（設定を確認してください）');
+    return false;
+  }
+
+  syncRef.on('value', (snap) => {
+    const val = snap.val();
+    if(firstSyncSnapshot){
+      firstSyncSnapshot = false;
+      if(!Array.isArray(val) || val.length === 0){
+        pushToSync();
+        syncStatus = 'synced';
+        renderSyncPanel();
+        return;
+      }
+    }
+    const json = JSON.stringify(val || []);
+    if(json === lastPushedJSON) return;
+    if(!Array.isArray(val)) return;
+    applyingRemote = true;
+    blocks = val;
+    blocks.forEach(b => {
+      if(!Array.isArray(b.tags)) b.tags = [];
+      if(typeof b.locked !== 'boolean') b.locked = false;
+    });
+    idSeed = blocks.reduce((m,b)=>Math.max(m, b.id||0), 0) + 1;
+    storageSet(STORAGE_KEY, JSON.stringify(blocks));
+    render();
+    applyingRemote = false;
+    syncStatus = 'synced';
+    renderSyncPanel();
+  }, (err) => {
+    console.error('sync listener error', err);
+    syncStatus = 'error';
+    renderSyncPanel();
+  });
+
+  saveSyncSettings(config, code);
+  return true;
+}
+
+async function pushToSync(){
+  if(!syncRef || applyingRemote) return;
+  try{
+    const json = JSON.stringify(blocks);
+    lastPushedJSON = json;
+    await syncRef.set(blocks);
+    syncStatus = 'synced';
+  }catch(e){
+    console.error('sync push failed', e);
+    syncStatus = 'error';
+  }
+  renderSyncPanel();
+}
+
+function disconnectSync(){
+  if(syncRef){ syncRef.off(); syncRef = null; }
+  clearSyncSettings();
+  syncStatus = 'idle';
+  renderSyncPanel();
+  showToast('同期を解除しました');
+}
+
+function syncStatusLabel(){
+  if(syncStatus === 'connecting') return '接続中…';
+  if(syncStatus === 'synced') return '同期中';
+  if(syncStatus === 'error') return 'エラー（設定を確認してください）';
+  return '未設定';
+}
+
+function renderSyncDot(){
+  syncDot.className = 'sync-dot' + (syncStatus !== 'idle' ? ' ' + syncStatus : '');
+}
+
+function renderSyncPanel(){
+  renderSyncDot();
+  const settings = getSyncSettings();
+  const connected = !!syncRef;
+
+  if(!connected){
+    syncPanel.innerHTML = `
+      <p>パソコンとiPhoneなど複数端末でメモを共有できます。FirebaseのRealtime Databaseを使います（Firebaseプロジェクトをお持ちでない場合は先にfirebase.google.comで作成してください。図書館スリップと同じプロジェクトを使い回しても構いません）。<br>
+      データベースのルールは <code>/hitomatome</code> 以下だけを公開する形にしておくことをおすすめします。</p>
+      <div>
+        <label>Firebaseの設定（Project settings → SDK setup and configuration からコピーした firebaseConfig をそのまま貼り付け）</label>
+        <textarea id="syncConfigInput" placeholder='{ "apiKey": "...", "databaseURL": "...", ... }'></textarea>
+      </div>
+      <div>
+        <label>同期コード（自分で決める合言葉。すべての端末で同じものを入力）</label>
+        <input type="text" id="syncCodeInput" placeholder="例：tanaka-note-2026">
+      </div>
+      <p class="sync-status-line"><span class="sync-dot ${syncStatus !== 'idle' ? syncStatus : ''}"></span>${syncStatusLabel()}</p>
+      <div class="sync-row">
+        <button class="btn primary" id="syncConnectBtn">接続する</button>
+      </div>
+    `;
+    const connectBtn = document.getElementById('syncConnectBtn');
+    connectBtn.addEventListener('click', async () => {
+      const cfgText = document.getElementById('syncConfigInput').value;
+      const codeText = document.getElementById('syncCodeInput').value;
+      const config = parseFirebaseConfig(cfgText);
+      const code = sanitizeSyncCode(codeText);
+      if(!config){
+        showToast('Firebaseの設定を読み取れませんでした');
+        return;
+      }
+      if(!code){
+        showToast('同期コードを入力してください');
+        return;
+      }
+      const ok = await connectSync(config, code);
+      if(ok) showToast('接続しました');
+      renderSyncPanel();
+    });
+  }else{
+    syncPanel.innerHTML = `
+      <p>同期コード: <strong>${escapeHtml(settings ? settings.code : '')}</strong><br>他の端末でも同じFirebaseの設定とこの同期コードを入力すると、メモが共有されます。</p>
+      <p class="sync-status-line"><span class="sync-dot ${syncStatus !== 'idle' ? syncStatus : ''}"></span>${syncStatusLabel()}</p>
+      <div class="sync-row">
+        <button class="btn ghost" id="syncDisconnectBtn">同期を解除</button>
+      </div>
+    `;
+    document.getElementById('syncDisconnectBtn').addEventListener('click', disconnectSync);
+  }
+}
+
+syncToggleBtn.addEventListener('click', () => {
+  syncPanel.hidden = !syncPanel.hidden;
+  if(!syncPanel.hidden) renderSyncPanel();
+});
+
+
+const PDFJS_WORKER_SRC = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+let pdfjsLoadPromise = null;
+function ensurePdfJs(){
+  if(window.pdfjsLib){
+    return Promise.resolve();
+  }
+  if(pdfjsLoadPromise) return pdfjsLoadPromise;
+  pdfjsLoadPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = PDFJS_SRC;
+    script.onload = () => {
+      pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_SRC;
+      resolve();
+    };
+    script.onerror = () => {
+      pdfjsLoadPromise = null;
+      reject(new Error('pdfjs load failed'));
+    };
+    document.head.appendChild(script);
+  });
+  return pdfjsLoadPromise;
+}
+
+function isPdf(file){
+  return file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+}
+
+async function extractPdfText(file){
+  await ensurePdfJs();
+  const buf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+  let text = '';
+  for(let p = 1; p <= pdf.numPages; p++){
+    const page = await pdf.getPage(p);
+    const content = await page.getTextContent();
+    const pageText = content.items.map(item => item.str).join(' ').replace(/\s+/g, ' ').trim();
+    text += pageText + '\n\n';
+  }
+  return text.trim();
+}
+
+
+let blocks = [];
+let idSeed = 1;
+let activeFilters = new Set();
+let clearArmed = false;
+let searchQuery = '';
+
+const listEl = document.getElementById('list');
+const filterBarEl = document.getElementById('filterBar');
+const countChip = document.getElementById('countChip');
+const toast = document.getElementById('toast');
+const toastText = document.getElementById('toastText');
+const fileInput = document.getElementById('fileInput');
+const clearAllBtn = document.getElementById('clearAll');
+const tagSuggestions = document.getElementById('tagSuggestions');
+const searchInput = document.getElementById('searchInput');
+const searchClear = document.getElementById('searchClear');
+const syncToggleBtn = document.getElementById('syncToggleBtn');
+const syncToggleLabel = document.getElementById('syncToggleLabel');
+const syncDot = document.getElementById('syncDot');
+const syncPanel = document.getElementById('syncPanel');
+
+const TAG_PALETTE = [
+  {bg:'#DCE6EE', fg:'#2D4A6B'},
+  {bg:'#F3DCD3', fg:'#8E3522'},
+  {bg:'#DCE9DE', fg:'#3F7A4D'},
+  {bg:'#EAE1F5', fg:'#5B3E8E'},
+  {bg:'#F5E6C8', fg:'#8A6A1F'},
+  {bg:'#D9EDEC', fg:'#1F6E68'},
+];
+
+function tagColor(tag){
+  let h = 0;
+  for(let i=0;i<tag.length;i++) h = (h*31 + tag.charCodeAt(i)) >>> 0;
+  return TAG_PALETTE[h % TAG_PALETTE.length];
+}
+
+function hashStr(s){
+  let h = 5381;
+  for(let i=0;i<s.length;i++){
+    h = ((h<<5)+h) + s.charCodeAt(i);
+    h = h | 0;
+  }
+  return (h>>>0).toString(36);
+}
+
+function showToast(msg){
+  toastText.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(()=> toast.classList.remove('show'), 2200);
+}
+
+function stripExt(name){
+  return name.replace(/\.[^./\\]+$/, '');
+}
+
+/* ---------- storage ----------
+   Claude.aiのプレビュー内では window.storage（クラウド保存）を使い、
+   GitHub Pagesなど自分でホスティングした環境（window.storageが存在しない）では
+   自動的にブラウザのlocalStorage（この端末のSafari内だけの保存）に切り替わる。
+   window.storageはページ読み込み直後だと少し遅れて使えるようになることがあるため、
+   起動時はiframe内（Claudeのプレビュー）かどうかを見て、必要なら少し待ってから判定する。
+*/
+let hasCloudStorage = false;
+
+function cloudStorageReady(){
+  return (typeof window.storage !== 'undefined') && window.storage && typeof window.storage.get === 'function';
+}
+
+async function detectCloudStorage(){
+  if(cloudStorageReady()){
+    hasCloudStorage = true;
+    return;
+  }
+  const isEmbedded = (() => {
+    try{ return window.self !== window.top; }catch(e){ return true; }
+  })();
+  if(!isEmbedded){
+    hasCloudStorage = false;
+    return;
+  }
+  const start = Date.now();
+  while(Date.now() - start < 800){
+    if(cloudStorageReady()){
+      hasCloudStorage = true;
+      return;
+    }
+    await new Promise(r => setTimeout(r, 50));
+  }
+  hasCloudStorage = false;
+}
+
+async function storageGet(key){
+  if(hasCloudStorage){
+    try{
+      const r = await window.storage.get(key, false);
+      return (r && typeof r.value === 'string') ? r.value : null;
+    }catch(e){
+      return null;
+    }
+  }
+  try{
+    return localStorage.getItem(key);
+  }catch(e){
+    return null;
+  }
+}
+async function storageSet(key, value){
+  if(hasCloudStorage){
+    try{
+      await window.storage.set(key, value, false);
+    }catch(e){
+      console.error('save failed', e);
+    }
+    return;
+  }
+  try{
+    localStorage.setItem(key, value);
+  }catch(e){
+    console.error('save failed', e);
+  }
+}
+
+let saveTimer = null;
+function scheduleSave(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveState, 450);
+}
+async function saveState(){
+  await storageSet(STORAGE_KEY, JSON.stringify(blocks));
+  if(syncRef && !applyingRemote) pushToSync();
+}
+async function loadState(){
+  const raw = await storageGet(STORAGE_KEY);
+  if(raw){
+    try{
+      const parsed = JSON.parse(raw);
+      if(Array.isArray(parsed)) blocks = parsed;
+    }catch(e){
+      blocks = [];
+    }
+  }
+  blocks.forEach(b => {
+    if(!Array.isArray(b.tags)) b.tags = [];
+    if(typeof b.locked !== 'boolean') b.locked = false;
+  });
+  idSeed = blocks.reduce((m,b)=>Math.max(m, b.id||0), 0) + 1;
+  render();
+}
+
+/* ---------- block ops ---------- */
+function addBlock(opts, focus){
+  opts = opts || {};
+  blocks.push({
+    id: idSeed++,
+    title: opts.title || '',
+    content: opts.content || '',
+    tags: opts.tags || [],
+    fingerprint: opts.fingerprint || null,
+    locked: false
+  });
+  render();
+  scheduleSave();
+  if(focus){
+    requestAnimationFrame(()=>{
+      const last = listEl.querySelector('.block:last-child textarea');
+      if(last) last.focus();
+    });
+  }
+}
+
+function removeBlock(id){
+  blocks = blocks.filter(b => b.id !== id);
+  render();
+  scheduleSave();
+}
+
+function toggleBlockLock(id){
+  const b = blocks.find(x => x.id === id);
+  if(!b) return;
+  b.locked = !b.locked;
+  render();
+  scheduleSave();
+  showToast(b.locked ? 'このメモをロックしました' : 'ロックを解除しました');
+}
+
+/* ---------- reorder (長押しドラッグ) ---------- */
+const LONG_PRESS_MS = 420;
+const MOVE_CANCEL_PX = 10;
+
+function startLongPress(e, id, cardEl){
+  if(e.pointerType === 'mouse' && e.button !== 0) return;
+  const startX = e.clientX;
+  const startY = e.clientY;
+  let cancelled = false;
+
+  const timer = setTimeout(() => {
+    if(cancelled) return;
+    cleanup();
+    beginDrag(id, cardEl, e.pointerId, startY);
+  }, LONG_PRESS_MS);
+
+  const onMove = (ev) => {
+    if(Math.abs(ev.clientY - startY) > MOVE_CANCEL_PX || Math.abs(ev.clientX - startX) > MOVE_CANCEL_PX){
+      cancelled = true;
+      cleanup();
+    }
+  };
+  const onUp = () => { cancelled = true; cleanup(); };
+  function cleanup(){
+    clearTimeout(timer);
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+  }
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+}
+
+function beginDrag(id, cardEl, pointerId, startY){
+  cardEl.classList.add('dragging');
+  try{ cardEl.setPointerCapture(pointerId); }catch(e){}
+
+  const indicator = document.createElement('div');
+  indicator.className = 'drop-indicator';
+  let placed = false;
+
+  const siblings = () => Array.from(listEl.querySelectorAll('.block')).filter(x => x !== cardEl);
+
+  const positionIndicator = (clientY) => {
+    const sibs = siblings();
+    let target = null;
+    for(const sib of sibs){
+      const r = sib.getBoundingClientRect();
+      if(clientY < r.top + r.height / 2){ target = sib; break; }
+    }
+    if(target){
+      listEl.insertBefore(indicator, target);
+    }else{
+      listEl.appendChild(indicator);
+    }
+    placed = true;
+  };
+
+  positionIndicator(startY);
+
+  const onMove = (ev) => {
+    if(ev.pointerId !== pointerId) return;
+    ev.preventDefault();
+    const dy = ev.clientY - startY;
+    cardEl.style.transform = `translateY(${dy}px)`;
+    positionIndicator(ev.clientY);
+  };
+
+  const onUp = (ev) => {
+    if(ev.pointerId !== pointerId) return;
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onUp);
+    window.removeEventListener('pointercancel', onUp);
+    try{ cardEl.releasePointerCapture(pointerId); }catch(e){}
+    cardEl.classList.remove('dragging');
+    cardEl.style.transform = '';
+
+    if(placed){
+      const nextEl = indicator.nextElementSibling;
+      const targetId = nextEl && nextEl.classList.contains('block') ? Number(nextEl.dataset.id) : null;
+      const fromIndex = blocks.findIndex(x => x.id === id);
+      if(fromIndex !== -1){
+        const [item] = blocks.splice(fromIndex, 1);
+        const toIndex = targetId !== null ? blocks.findIndex(x => x.id === targetId) : blocks.length;
+        blocks.splice(toIndex === -1 ? blocks.length : toIndex, 0, item);
+      }
+    }
+    indicator.remove();
+    render();
+    scheduleSave();
+  };
+
+  window.addEventListener('pointermove', onMove, { passive: false });
+  window.addEventListener('pointerup', onUp);
+  window.addEventListener('pointercancel', onUp);
+}
+
+function addTag(b, raw){
+  raw.split(',').map(t=>t.trim()).filter(Boolean).forEach(t=>{
+    if(!b.tags.includes(t)) b.tags.push(t);
+  });
+  render();
+  scheduleSave();
+}
+function removeTag(b, tag){
+  b.tags = b.tags.filter(t => t !== tag);
+  render();
+  scheduleSave();
+}
+
+function allTags(){
+  const set = new Set();
+  blocks.forEach(b => b.tags.forEach(t => set.add(t)));
+  return Array.from(set).sort();
+}
+
+function isFiltering(){
+  return activeFilters.size > 0 || searchQuery.trim().length > 0;
+}
+
+function visibleBlocks(){
+  let list = blocks;
+  if(activeFilters.size > 0){
+    list = list.filter(b => b.tags.some(t => activeFilters.has(t)));
+  }
+  const q = searchQuery.trim().toLowerCase();
+  if(q){
+    list = list.filter(b => {
+      if(b.title && b.title.toLowerCase().includes(q)) return true;
+      if(b.tags.some(t => t.toLowerCase().includes(q))) return true;
+      if(b.content && b.content.toLowerCase().includes(q)) return true;
+      return false;
+    });
+  }
+  return list;
+}
+
+function combinedText(list){
+  return list.map(b => {
+    const body = b.content.trim();
+    const head = b.title.trim() ? `▼ ${b.title.trim()}` : null;
+    const tagLine = b.tags.length ? `[${b.tags.join(' / ')}]` : null;
+    return [head, tagLine, body].filter(Boolean).join('\n');
+  }).join('\n\n──────────\n\n');
+}
+
+async function copyText(text, msg){
+  try{
+    await navigator.clipboard.writeText(text);
+    showToast(msg || 'コピーしました');
+  }catch(e){
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try{ document.execCommand('copy'); showToast(msg || 'コピーしました'); }
+    catch(e2){ showToast('コピーに失敗しました'); }
+    document.body.removeChild(ta);
+  }
+}
+
+function buildFileName(title){
+  const safe = (title || '').trim().replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+  if(safe) return `${safe}.txt`;
+  const d = new Date();
+  const pad = n => String(n).padStart(2, '0');
+  return `ひとまとめ_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}.txt`;
+}
+
+async function shareBlock(b){
+  if(!b) return;
+  const text = combinedText([b]);
+  if(!text.trim()) return;
+
+  const filename = buildFileName(b.title);
+  let file = null;
+  try{
+    file = new File([text], filename, { type: 'text/plain' });
+  }catch(e){
+    file = null;
+  }
+
+  if(file && navigator.canShare && navigator.canShare({ files: [file] })){
+    try{
+      await navigator.share({ files: [file], title: filename });
+      return;
+    }catch(e){
+      if(e && e.name === 'AbortError') return;
+    }
+  }
+
+  if(navigator.share){
+    try{
+      await navigator.share({ text });
+      return;
+    }catch(e){
+      if(e && e.name === 'AbortError') return;
+    }
+  }
+
+  copyText(text, 'コピーしました（共有はこの環境では使えません）');
+}
+
+/* ---------- render ---------- */
+function render(){
+  renderFilterBar();
+  renderList();
+  renderTagSuggestions();
+
+  const vis = visibleBlocks();
+  countChip.textContent = isFiltering()
+    ? `${vis.length} / ${blocks.length}件`
+    : `${blocks.length}件`;
+}
+
+function renderTagSuggestions(){
+  tagSuggestions.innerHTML = allTags().map(t => `<option value="${escapeAttr(t)}">`).join('');
+}
+
+function renderFilterBar(){
+  const tags = allTags();
+  if(tags.length === 0){
+    filterBarEl.innerHTML = '';
+    return;
+  }
+  let html = tags.map(t => {
+    const active = activeFilters.has(t);
+    return `<button class="filter-chip ${active ? 'active' : ''}" data-tag="${escapeAttr(t)}">${escapeHtml(t)}</button>`;
+  }).join('');
+  if(activeFilters.size > 0){
+    html += `<button class="filter-chip clear" id="clearFilter">すべて表示</button>`;
+  }
+  filterBarEl.innerHTML = html;
+
+  filterBarEl.querySelectorAll('[data-tag]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.getAttribute('data-tag');
+      if(activeFilters.has(t)) activeFilters.delete(t); else activeFilters.add(t);
+      render();
+    });
+  });
+  const clearBtn = document.getElementById('clearFilter');
+  if(clearBtn) clearBtn.addEventListener('click', () => { activeFilters.clear(); render(); });
+}
+
+function renderList(){
+  const list = visibleBlocks();
+
+  if(blocks.length === 0){
+    listEl.innerHTML = `
+      <div class="empty">
+        <strong>まだ何もありません</strong>
+        「ファイルから読み込む」でiPhoneの文章・PDFを複数選ぶか、<br>
+        「空のメモを追加」で直接貼り付けてください。
+      </div>`;
+    return;
+  }
+  if(list.length === 0){
+    listEl.innerHTML = `
+      <div class="empty">
+        <strong>見つかりませんでした</strong>
+        検索条件やタグの絞り込みを変えてみてください。<br>
+        <button class="mini" id="resetSearchFilter" style="margin-top:8px;">検索・絞り込みを解除</button>
+      </div>`;
+    const resetBtn = document.getElementById('resetSearchFilter');
+    if(resetBtn) resetBtn.addEventListener('click', () => {
+      activeFilters.clear();
+      searchQuery = '';
+      searchInput.value = '';
+      searchClear.hidden = true;
+      render();
+    });
+    return;
+  }
+
+  listEl.innerHTML = '';
+  list.forEach((b, i) => {
+    const el = document.createElement('div');
+    el.className = 'block' + (b.locked ? ' is-locked' : '');
+    el.dataset.id = b.id;
+    const tagsHtml = b.tags.map(t => {
+      const c = tagColor(t);
+      const removeBtn = b.locked ? '' : `<button data-tag="${escapeAttr(t)}" class="tag-remove">×</button>`;
+      return `<span class="tag-pill" style="background:${c.bg};color:${c.fg}">${escapeHtml(t)}${removeBtn}</span>`;
+    }).join('');
+    const titleHtml = b.title.trim()
+      ? `<span class="title-text">${escapeHtml(b.title.trim())}</span>`
+      : `<span class="title-text title-placeholder">（無題）</span>`;
+    const dragDisabled = b.locked || isFiltering();
+
+    el.innerHTML = `
+      <div class="block-head">
+        <span class="grip-handle${dragDisabled ? ' is-disabled' : ''}" title="長押しで並び替え">
+          <svg viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.5"/><circle cx="15" cy="6" r="1.5"/><circle cx="9" cy="12" r="1.5"/><circle cx="15" cy="12" r="1.5"/><circle cx="9" cy="18" r="1.5"/><circle cx="15" cy="18" r="1.5"/></svg>
+        </span>
+        <span class="idx">${String(i+1).padStart(2,'0')}</span>
+        <button type="button" class="title-display" data-act="open">
+          ${titleHtml}
+        </button>
+        <button class="icon-btn${b.locked ? ' lock-active' : ''}" data-act="lock" title="${b.locked ? 'ロック解除' : 'このメモをロック'}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="9" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>
+        </button>
+        <button class="icon-btn" data-act="share" title="このメモを送信">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="M16 6l-4-4-4 4"/><path d="M12 2v14"/></svg>
+        </button>
+        <button class="icon-btn danger" data-act="del" title="削除" ${b.locked ? 'disabled' : ''}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6"/></svg>
+        </button>
+      </div>
+      <div class="tag-row">
+        ${tagsHtml}
+        ${b.locked ? '' : '<input class="tag-input" type="text" placeholder="+ タグ" list="tagSuggestions">'}
+      </div>
+      <div class="block-foot">
+        <button class="mini" data-act="copyone">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="11" height="11" rx="1.5"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          この一件をコピー
+        </button>
+      </div>
+    `;
+    listEl.appendChild(el);
+
+    const gripHandle = el.querySelector('.grip-handle');
+    if(!dragDisabled){
+      gripHandle.addEventListener('pointerdown', (e) => startLongPress(e, b.id, el));
+    }else{
+      gripHandle.addEventListener('click', () => {
+        showToast(b.locked ? 'ロック中は並び替えできません' : '検索・絞り込み中は並び替えできません');
+      });
+    }
+
+    el.querySelector('[data-act="lock"]').addEventListener('click', () => toggleBlockLock(b.id));
+    el.querySelector('[data-act="open"]').addEventListener('click', () => openDetail(b.id));
+    el.querySelector('[data-act="share"]').addEventListener('click', () => shareBlock(b));
+    el.querySelector('[data-act="del"]').addEventListener('click', () => removeBlock(b.id));
+    el.querySelector('[data-act="copyone"]').addEventListener('click', () => {
+      const text = combinedText([b]);
+      copyText(text);
+    });
+
+    el.querySelectorAll('.tag-remove').forEach(btn => {
+      btn.addEventListener('click', () => removeTag(b, btn.getAttribute('data-tag')));
+    });
+    const tagInput = el.querySelector('.tag-input');
+    if(tagInput){
+      tagInput.addEventListener('keydown', (e) => {
+        if(e.key === 'Enter' || e.key === ','){
+          e.preventDefault();
+          if(tagInput.value.trim()) addTag(b, tagInput.value);
+        }
+      });
+      tagInput.addEventListener('blur', () => {
+        if(tagInput.value.trim()) addTag(b, tagInput.value);
+      });
+    }
+  });
+}
+
+function autoGrow(ta){
+  ta.style.height = 'auto';
+  ta.style.height = Math.min(ta.scrollHeight, 480) + 'px';
+}
+
+function escapeHtml(s){
+  return (s || '').replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+}
+function escapeAttr(s){
+  return (s || '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+}
+
+/* ---------- detail view (Notion風の全画面編集) ---------- */
+let currentDetailId = null;
+const detailView = document.getElementById('detailView');
+const detailBack = document.getElementById('detailBack');
+const detailIdx = document.getElementById('detailIdx');
+const detailLockBtn = document.getElementById('detailLockBtn');
+const detailShareBtn = document.getElementById('detailShareBtn');
+const detailDelBtn = document.getElementById('detailDelBtn');
+const detailTitleInput = document.getElementById('detailTitleInput');
+const detailTagRow = document.getElementById('detailTagRow');
+const detailContent = document.getElementById('detailContent');
+
+function openDetail(id){
+  const b = blocks.find(x => x.id === id);
+  if(!b) return;
+  currentDetailId = id;
+  detailView.hidden = false;
+  renderDetail();
+  requestAnimationFrame(() => {
+    autoGrow(detailTitleInput);
+    if(!b.locked) detailContent.focus({ preventScroll: true });
+  });
+}
+function closeDetail(){
+  detailView.hidden = true;
+  currentDetailId = null;
+  render();
+}
+
+function renderDetail(){
+  const b = blocks.find(x => x.id === currentDetailId);
+  if(!b){ closeDetail(); return; }
+
+  const idx = blocks.findIndex(x => x.id === b.id);
+  detailIdx.textContent = String(idx + 1).padStart(2, '0');
+
+  detailTitleInput.value = b.title;
+  detailTitleInput.readOnly = b.locked;
+  autoGrow(detailTitleInput);
+  detailContent.value = b.content;
+  detailContent.readOnly = b.locked;
+
+  detailLockBtn.classList.toggle('lock-active', b.locked);
+  detailLockBtn.title = b.locked ? 'ロック解除' : 'このメモをロック';
+  detailDelBtn.disabled = b.locked;
+
+  const tagsHtml = b.tags.map(t => {
+    const c = tagColor(t);
+    const removeBtn = b.locked ? '' : `<button data-tag="${escapeAttr(t)}" class="tag-remove">×</button>`;
+    return `<span class="tag-pill" style="background:${c.bg};color:${c.fg}">${escapeHtml(t)}${removeBtn}</span>`;
+  }).join('');
+  detailTagRow.innerHTML = tagsHtml + (b.locked ? '' : '<input class="tag-input" type="text" placeholder="+ タグ" list="tagSuggestions">');
+
+  detailTagRow.querySelectorAll('.tag-remove').forEach(btn => {
+    btn.addEventListener('click', () => {
+      removeTag(b, btn.getAttribute('data-tag'));
+      renderDetail();
+    });
+  });
+  const dTagInput = detailTagRow.querySelector('.tag-input');
+  if(dTagInput){
+    dTagInput.addEventListener('keydown', (e) => {
+      if(e.key === 'Enter' || e.key === ','){
+        e.preventDefault();
+        if(dTagInput.value.trim()){
+          addTag(b, dTagInput.value);
+          renderDetail();
+        }
+      }
+    });
+    dTagInput.addEventListener('blur', () => {
+      if(dTagInput.value.trim()){
+        addTag(b, dTagInput.value);
+        renderDetail();
+      }
+    });
+  }
+}
+
+detailBack.addEventListener('click', closeDetail);
+
+detailTitleInput.addEventListener('input', () => {
+  const b = blocks.find(x => x.id === currentDetailId);
+  if(!b) return;
+  b.title = detailTitleInput.value;
+  autoGrow(detailTitleInput);
+  scheduleSave();
+});
+detailTitleInput.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    detailContent.focus();
+  }
+});
+
+detailContent.addEventListener('input', () => {
+  const b = blocks.find(x => x.id === currentDetailId);
+  if(!b) return;
+  b.content = detailContent.value;
+  scheduleSave();
+});
+
+detailLockBtn.addEventListener('click', () => {
+  if(currentDetailId == null) return;
+  toggleBlockLock(currentDetailId);
+  renderDetail();
+});
+
+detailShareBtn.addEventListener('click', () => {
+  const b = blocks.find(x => x.id === currentDetailId);
+  shareBlock(b);
+});
+
+detailDelBtn.addEventListener('click', () => {
+  const b = blocks.find(x => x.id === currentDetailId);
+  if(!b || b.locked) return;
+  removeBlock(currentDetailId);
+  closeDetail();
+});
+
+/* ---------- toolbar ---------- */
+document.getElementById('addBlank').addEventListener('click', () => addBlock({}, true));
+document.getElementById('addFromFiles').addEventListener('click', () => fileInput.click());
+
+document.getElementById('pasteClipboard').addEventListener('click', async () => {
+  if(!navigator.clipboard || !navigator.clipboard.readText){
+    showToast('このブラウザはクリップボード読み取りに対応していません');
+    return;
+  }
+  try{
+    const text = await navigator.clipboard.readText();
+    if(!text || !text.trim()){
+      showToast('クリップボードが空でした');
+      return;
+    }
+    addBlock({ content: text }, true);
+    showToast('貼り付けて新規メモを作成しました');
+  }catch(e){
+    showToast('クリップボードを読み取れませんでした（許可が必要な場合があります）');
+  }
+});
+
+searchInput.addEventListener('input', () => {
+  searchQuery = searchInput.value;
+  searchClear.hidden = searchQuery.length === 0;
+  render();
+});
+searchClear.addEventListener('click', () => {
+  searchQuery = '';
+  searchInput.value = '';
+  searchClear.hidden = true;
+  render();
+  searchInput.focus();
+});
+
+fileInput.addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files || []);
+  if(files.length === 0) return;
+
+  if(files.some(isPdf)) showToast('PDFを解析中…');
+
+  let loaded = 0, skipped = 0, empty = 0;
+  for(const file of files){
+    try{
+      const text = isPdf(file) ? await extractPdfText(file) : await file.text();
+      if(!text || !text.trim()){
+        empty++;
+        continue;
+      }
+      const fp = file.name + '::' + hashStr(text);
+      if(blocks.some(b => b.fingerprint === fp)){
+        skipped++;
+        continue;
+      }
+      addBlock({ title: stripExt(file.name), content: text, fingerprint: fp }, false);
+      loaded++;
+    }catch(err){
+      empty++;
+    }
+  }
+  fileInput.value = '';
+
+  const parts = [];
+  if(loaded > 0) parts.push(`${loaded}件読み込み`);
+  if(skipped > 0) parts.push(`${skipped}件は重複でスキップ`);
+  if(empty > 0) parts.push(`${empty}件は文字を取得できず`);
+  showToast(parts.length ? parts.join(' / ') : '読み込めるファイルがありませんでした');
+});
+
+clearAllBtn.addEventListener('click', () => {
+  if(blocks.length === 0) return;
+  if(!clearArmed){
+    clearArmed = true;
+    clearAllBtn.classList.add('danger-confirm');
+    clearAllBtn.querySelector('svg').nextSibling.textContent = 'もう一度押すと全削除';
+    setTimeout(() => {
+      clearArmed = false;
+      clearAllBtn.classList.remove('danger-confirm');
+      clearAllBtn.querySelector('svg').nextSibling.textContent = '全部削除';
+    }, 3000);
+    return;
+  }
+  clearArmed = false;
+  clearAllBtn.classList.remove('danger-confirm');
+  clearAllBtn.querySelector('svg').nextSibling.textContent = '全部削除';
+  blocks = [];
+  activeFilters.clear();
+  render();
+  scheduleSave();
+  showToast('すべて削除しました');
+});
+
+/* ---------- boot ---------- */
+(async () => {
+  await detectCloudStorage();
+  await loadState();
+  renderSyncDot();
+  const settings = getSyncSettings();
+  if(settings){
+    connectSync(settings.config, settings.code, { silent: true });
+  }
+})();
+</script>
+</body>
+</html>
